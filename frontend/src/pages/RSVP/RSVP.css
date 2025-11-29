@@ -1,0 +1,25 @@
+.rsvp-container {
+    max-width: 600px;
+    margin: 40px auto;
+    text-align: center;
+}
+
+.event-details {
+    color: var(--secondary-color);
+    font-size: 1.1em;
+    margin-bottom: 30px;
+}
+
+.guest-info {
+    margin-bottom: 30px;
+    padding: 15px;
+    background-color: var(--input-bg);
+    border-radius: 8px;
+}
+
+.rsvp-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    text-align: left;
+}
