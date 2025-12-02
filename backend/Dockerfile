@@ -7,6 +7,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+# Make entrypoint executable
+RUN chmod +x entrypoint.sh
+
 EXPOSE 5000
 
-CMD ["python", "app.py"]
+ENTRYPOINT ["./entrypoint.sh"]

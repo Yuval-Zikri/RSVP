@@ -6,9 +6,13 @@
 }
 
 .event-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     padding: 15px;
     border-bottom: 1px solid var(--border-color);
     cursor: pointer;
+    transition: background-color 0.2s;
 }
 
 .event-item:hover {
@@ -18,6 +22,25 @@
 .event-item.active {
     background-color: var(--input-bg);
     border-left: 4px solid var(--primary-color);
+}
+
+.event-item-content {
+    flex: 1;
+}
+
+.btn-delete {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 5px;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.btn-delete:hover {
+    opacity: 1;
+    color: #dc3545;
 }
 
 .stats-grid {
@@ -39,6 +62,10 @@
     font-size: 24px;
     font-weight: bold;
     color: var(--primary-color);
+}
+
+.table-responsive {
+    overflow-x: auto;
 }
 
 .rsvp-table {

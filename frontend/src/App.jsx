@@ -26,21 +26,33 @@ function App() {
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
       <LanguageContext.Provider value={{ language, setLanguage }}>
         <Router>
-          <div className={`app-container ${language === 'he' ? 'layout-rtl' : 'layout-ltr'}`}>
-            <Sidebar />
-
-            <main className="main-content">
-              <Routes>
-                <Route path="/" element={<CreateEvent />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/rsvp/:token" element={<RSVP />} />
-              </Routes>
-            </main>
-          </div>
+          <AppContent />
         </Router>
       </LanguageContext.Provider>
     </ThemeContext.Provider>
   );
 }
+
+function AppContent() {
+  const { language } = React.useContext(LanguageContext);
+  const location = window.location;
+  // Check if current path is RSVP page
+  const isRSVP = window.location.pathname.startsWith('/rsvp');
+
+  return (
+    <div className={`app-container ${language === 'he' ? 'layout-rtl' : 'layout-ltr'}`}>
+      {!isRSVP && <Sidebar />}
+
+      <main className="main-content" style={isRSVP ? { padding: 0, width: '100%' } : {}}>
+        <Routes>
+          <Route path="/" element={<CreateEvent />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/rsvp/:token" element={<RSVP />} />
+        </Routes>
+      </main>
+    </div>
+  );
+}
+
 
 export default App;

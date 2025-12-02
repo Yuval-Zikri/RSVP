@@ -1,5 +1,5 @@
 from datetime import datetime
-from app import db
+from extensions import db
 import uuid
 
 class Event(db.Model):
@@ -11,6 +11,7 @@ class Event(db.Model):
     date = db.Column(db.DateTime, nullable=False)
     location = db.Column(db.String(200), nullable=False)
     background_theme = db.Column(db.String(50), default='default')
+    email_background_url = db.Column(db.String(500), nullable=True)  # Unsplash URL for emails
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     invitations = db.relationship('Invitation', backref='event', lazy=True)
@@ -22,7 +23,8 @@ class Event(db.Model):
             'type': self.type,
             'date': self.date.isoformat(),
             'location': self.location,
-            'background_theme': self.background_theme
+            'background_theme': self.background_theme,
+            'email_background_url': self.email_background_url
         }
 
 class Invitation(db.Model):

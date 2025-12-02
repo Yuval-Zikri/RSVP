@@ -5,7 +5,7 @@ import './CreateEvent.css';
 import EventPreview from '../../components/EventPreview';
 import { LanguageContext } from '../../App';
 
-import EVENT_TYPES, { getAllEventTypes, getEventTypeName, getBackgrounds } from '../../utils/eventTypes';
+import EVENT_TYPES, { getAllEventTypes, getEventTypeName, getBackgrounds, getEmailBackground } from '../../utils/eventTypes';
 
 export default function CreateEvent() {
     const context = useContext(LanguageContext);
@@ -20,8 +20,18 @@ export default function CreateEvent() {
         guests: [] // Array of {name, email}
     });
     const [loading, setLoading] = useState(false);
+    const [activeTab, setActiveTab] = useState('import');
+    const [manualEntry, setManualEntry] = useState({ name: '', email: '' });
 
-    const handleNext = () => setStep(prev => Math.min(prev + 1, 3));
+    const handleNext = () => {
+        if (step === 1) {
+            if (!formData.title || !formData.date || !formData.location) {
+                alert(language === 'en' ? 'Please fill in all required fields (Title, Date, Location)' : 'נא למלא את כל שדות החובה (שם, תאריך, מיקום)');
+                return;
+            }
+        }
+        setStep(prev => Math.min(prev + 1, 3));
+    };
     const handleBack = () => setStep(prev => Math.max(prev - 1, 0));
 
     const handleFileUpload = (e) => {
@@ -43,21 +53,40 @@ export default function CreateEvent() {
         reader.readAsBinaryString(file);
     };
 
+    const handleManualAdd = () => {
+        if (manualEntry.name && manualEntry.email) {
+            setFormData(prev => ({
+                ...prev,
+                guests: [...prev.guests, manualEntry]
+            }));
+            setManualEntry({ name: '', email: '' });
+        }
+    };
+
+    const removeGuest = (index) => {
+        setFormData(prev => ({
+            ...prev,
+            guests: prev.guests.filter((_, i) => i !== index)
+        }));
+    };
+
     const handleSubmit = async () => {
         setLoading(true);
         try {
             // 1. Create Event
-            const eventRes = await axios.post('http://localhost:5000/api/events', {
+            const eventRes = await axios.post('/api/events', {
                 title: formData.title,
                 type: formData.type,
                 date: formData.date,
-                location: formData.location
+                location: formData.location,
+                background_theme: formData.background || getBackgrounds(formData.type)[0], // Local filename
+                email_background_url: getEmailBackground(formData.type) // Unsplash URL for email
             });
 
             const eventId = eventRes.data.id;
 
             // 2. Send Invitations
-            await axios.post('http://localhost:5000/api/invitations', {
+            await axios.post('/api/invitations', {
                 event_id: eventId,
                 guests: formData.guests
             });
@@ -149,22 +178,122 @@ export default function CreateEvent() {
                                 onChange={e => setFormData({ ...formData, date: e.target.value })}
                             />
                             <label>{language === 'en' ? 'Location' : 'מיקום'}</label>
-                            <input
-                                value={formData.location}
-                                onChange={e => setFormData({ ...formData, location: e.target.value })}
-                            />
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <input
+                                    value={formData.location}
+                                    onChange={e => setFormData({ ...formData, location: e.target.value })}
+                                    style={{ flex: 1 }}
+                                />
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(formData.location)}`, '_blank')}
+                                    disabled={!formData.location}
+                                    title={language === 'en' ? 'Verify on Google Maps' : 'בדוק בגוגל מפות'}
+                                >
+                                    📍
+                                </button>
+                            </div>
                         </div>
                     )}
 
                     {step === 2 && (
                         <div className="form-step">
-                            <p>{language === 'en' ? 'Upload Excel file with columns: Name, Email' : 'העלה קובץ Excel עם עמודות: שם, אימייל'}</p>
-                            <input type="file" accept=".xlsx, .xls" onChange={handleFileUpload} />
-                            <p>{language === 'en' ? `Loaded ${formData.guests.length} guests` : `נטענו ${formData.guests.length} אורחים`}</p>
-                            <ul>
-                                {formData.guests.slice(0, 5).map((g, i) => <li key={i}>{g.name} - {g.email}</li>)}
-                                {formData.guests.length > 5 && <li>{language === 'en' ? `...and ${formData.guests.length - 5} more` : `...ועוד ${formData.guests.length - 5}`}</li>}
-                            </ul>
+                            <div className="guest-import-tabs">
+                                <button
+                                    className={`tab-btn ${activeTab === 'import' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('import')}
+                                >
+                                    {language === 'en' ? 'Import Excel' : 'ייבוא מאקסל'}
+                                </button>
+                                <button
+                                    className={`tab-btn ${activeTab === 'manual' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('manual')}
+                                >
+                                    {language === 'en' ? 'Manual Add' : 'הוספה ידנית'}
+                                </button>
+                            </div>
+
+                            <div className="tab-content">
+                                {activeTab === 'import' && (
+                                    <div className="import-section">
+                                        <div className="sample-download">
+                                            <a href="#" onClick={(e) => {
+                                                e.preventDefault();
+                                                const ws = XLSX.utils.json_to_sheet([{ Name: 'John Doe', Email: 'john@example.com' }]);
+                                                const wb = XLSX.utils.book_new();
+                                                XLSX.utils.book_append_sheet(wb, ws, "Guests");
+                                                XLSX.writeFile(wb, "guests_sample.xlsx");
+                                            }}>
+                                                {language === 'en' ? 'Download sample file - Click here' : 'להורדת קובץ לדוגמה - לחצו כאן'}
+                                            </a>
+                                        </div>
+
+                                        <div className="file-upload-container">
+                                            <label>{language === 'en' ? 'Upload File' : 'העלאת קובץ'}</label>
+                                            <div className="file-input-wrapper">
+                                                <input
+                                                    type="file"
+                                                    accept=".xlsx, .xls, .csv"
+                                                    onChange={handleFileUpload}
+                                                    id="file-upload"
+                                                    className="file-input"
+                                                />
+                                                <label htmlFor="file-upload" className="btn btn-secondary">
+                                                    {language === 'en' ? 'Choose File' : 'בחירת קובץ'}
+                                                </label>
+                                                <span className="file-name">
+                                                    {language === 'en' ? '* Select .xlsx or .csv file only' : '* נא לבחור קובץ (סיומת xls או csv בלבד)'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'manual' && (
+                                    <div className="manual-add-section">
+                                        <div className="manual-input-group">
+                                            <input
+                                                placeholder={language === 'en' ? 'Name' : 'שם מלא'}
+                                                value={manualEntry.name}
+                                                onChange={e => setManualEntry({ ...manualEntry, name: e.target.value })}
+                                            />
+                                            <input
+                                                placeholder={language === 'en' ? 'Email' : 'אימייל'}
+                                                value={manualEntry.email}
+                                                onChange={e => setManualEntry({ ...manualEntry, email: e.target.value })}
+                                            />
+                                            <button
+                                                className="btn btn-success"
+                                                onClick={handleManualAdd}
+                                                disabled={!manualEntry.name || !manualEntry.email}
+                                            >
+                                                {language === 'en' ? 'Add' : 'הוסף'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="guests-list-summary">
+                                <h4>{language === 'en' ? `Guests List (${formData.guests.length})` : `רשימת אורחים (${formData.guests.length})`}</h4>
+                                <div className="guests-scroll-list">
+                                    {formData.guests.map((g, i) => (
+                                        <div key={i} className="guest-item">
+                                            <span>{g.name} ({g.email})</span>
+                                            <button
+                                                className="remove-guest-btn"
+                                                onClick={() => removeGuest(i)}
+                                                title={language === 'en' ? 'Remove' : 'הסר'}
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {formData.guests.length === 0 && (
+                                        <p className="no-guests">{language === 'en' ? 'No guests added yet' : 'טרם נוספו אורחים'}</p>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     )}
 

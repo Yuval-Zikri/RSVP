@@ -16,7 +16,7 @@ export default function RSVP() {
     useEffect(() => {
         const fetchInvite = async () => {
             try {
-                const res = await axios.get(`http://localhost:5000/api/rsvp/${token}`);
+                const res = await axios.get(`/api/rsvp/${token}`);
                 setInvite(res.data.invitation);
                 setEvent(res.data.event);
                 setFormData({
@@ -34,7 +34,7 @@ export default function RSVP() {
 
     const handleSubmit = async () => {
         try {
-            await axios.post(`http://localhost:5000/api/rsvp/${token}`, formData);
+            await axios.post(`/api/rsvp/${token}`, formData);
             alert('Thank you for your response!');
             window.location.reload();
         } catch (err) {
@@ -45,43 +45,116 @@ export default function RSVP() {
     if (loading) return <div>Loading...</div>;
     if (!invite) return <div>Invalid Invitation Link</div>;
 
+    const toggleTheme = () => {
+        const newTheme = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        document.body.setAttribute('data-theme', newTheme);
+    };
+
+    // Convert filename to local URL
+    const getBackgroundUrl = (filename) => {
+        try {
+            return new URL(`../../background/${filename}`, import.meta.url).href;
+        } catch {
+            return filename; // Fallback if it's already a URL
+        }
+    };
+
     return (
-        <div className="rsvp-container card">
-            <h1>{event.title}</h1>
-            <p className="event-details">
-                {new Date(event.date).toLocaleString()} @ {event.location}
-            </p>
+        <div className="rsvp-page" style={{ backgroundImage: `url(${getBackgroundUrl(event.background_theme)})` }}>
+            <button className="theme-toggle-btn" onClick={toggleTheme}>
+                🌓
+            </button>
 
-            <div className="guest-info">
-                <p>Hello, <strong>{invite.name}</strong>!</p>
-                <p>Current Status: <span className={`status-badge ${invite.status}`}>{invite.status}</span></p>
-            </div>
+            <div className="rsvp-card">
+                <div className="event-header">
+                    <span className="event-label">WEDDING</span>
+                    <h1>{event.title}</h1>
+                </div>
 
-            <div className="rsvp-form">
-                <label>Will you attend?</label>
-                <select
-                    value={formData.status}
-                    onChange={e => setFormData({ ...formData, status: e.target.value })}
-                >
-                    <option value="attending">Yes, I'll be there!</option>
-                    <option value="not_attending">Sorry, can't make it</option>
-                </select>
+                <div className="event-info">
+                    <div className="info-item">
+                        <span className="icon">📅</span>
+                        <p>{new Date(event.date).toLocaleString()}</p>
+                    </div>
+                    <div className="info-item">
+                        <span className="icon">📍</span>
+                        <p>{event.location}</p>
+                    </div>
+                </div>
 
-                {formData.status === 'attending' && (
-                    <>
-                        <label>How many additional guests?</label>
-                        <input
-                            type="number"
-                            min="0"
-                            value={formData.guests_count}
-                            onChange={e => setFormData({ ...formData, guests_count: parseInt(e.target.value) })}
-                        />
-                    </>
-                )}
+                <div className="location-actions">
+                    {event.latitude && event.longitude ? (
+                        <>
+                            <a
+                                href={`https://waze.com/ul?ll=${event.latitude},${event.longitude}&navigate=yes`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn-location waze"
+                            >
+                                Navigate with Waze
+                            </a>
+                            <a
+                                href={`https://www.google.com/maps/search/?api=1&query=${event.latitude},${event.longitude}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn-location google"
+                            >
+                                Google Maps
+                            </a>
+                        </>
+                    ) : (
+                        <>
+                            <a
+                                href={`https://waze.com/ul?q=${encodeURIComponent(event.location)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn-location waze"
+                            >
+                                Navigate with Waze
+                            </a>
+                            <a
+                                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn-location google"
+                            >
+                                Google Maps
+                            </a>
+                        </>
+                    )}
+                </div>
 
-                <button className="btn btn-primary" onClick={handleSubmit} style={{ marginTop: '20px' }}>
-                    {invite.status === 'pending' ? 'Send RSVP' : 'Update RSVP'}
-                </button>
+                <div className="guest-welcome">
+                    <p>Hello <strong>{invite.name}</strong>,</p>
+                    <p>We would love to see you there!</p>
+                </div>
+
+                <div className="rsvp-form-section">
+                    <select
+                        value={formData.status}
+                        onChange={e => setFormData({ ...formData, status: e.target.value })}
+                        className="status-select"
+                    >
+                        <option value="attending">✅ I'll be there</option>
+                        <option value="not_attending">❌ Can't make it</option>
+                    </select>
+
+                    {formData.status === 'attending' && (
+                        <div className="guests-input">
+                            <label>Additional Guests:</label>
+                            <input
+                                type="number"
+                                min="0"
+                                value={formData.guests_count}
+                                onChange={e => setFormData({ ...formData, guests_count: parseInt(e.target.value) })}
+                            />
+                        </div>
+                    )}
+
+                    <button className="btn-submit" onClick={handleSubmit}>
+                        {invite.status === 'pending' ? 'RSVP Now' : 'Update RSVP'}
+                    </button>
+                </div>
             </div>
         </div>
     );

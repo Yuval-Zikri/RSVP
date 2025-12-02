@@ -125,3 +125,176 @@
     border-top: 1px solid var(--border-color);
     padding-top: 20px;
 }
+
+/* Guest Import Tabs */
+.guest-import-tabs {
+    display: flex;
+    border-bottom: 2px solid #e0e0e0;
+    margin-bottom: 20px;
+}
+
+.tab-btn {
+    padding: 10px 20px;
+    border: none;
+    background: none;
+    font-size: 1rem;
+    cursor: pointer;
+    color: #666;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.3s ease;
+}
+
+.tab-btn.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    font-weight: bold;
+}
+
+.tab-btn:hover:not(.active) {
+    color: #333;
+}
+
+/* Import Section */
+.import-section {
+    text-align: center;
+}
+
+.sample-download {
+    margin-bottom: 20px;
+}
+
+.sample-download a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.sample-download a:hover {
+    text-decoration: underline;
+}
+
+.file-upload-container {
+    border: 2px dashed #ccc;
+    padding: 30px;
+    border-radius: 8px;
+    background: #f9f9f9;
+    margin-bottom: 20px;
+}
+
+.file-input-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.file-input {
+    display: none;
+}
+
+.file-name {
+    font-size: 0.8rem;
+    color: #666;
+}
+
+/* Manual Add Section */
+.manual-add-section {
+    padding: 20px 0;
+}
+
+.manual-input-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.manual-input-group input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.btn-success {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.btn-success:hover {
+    background-color: #218838;
+}
+
+.btn-success:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    background-color: #17a2b8;
+    color: white;
+    cursor: pointer;
+    display: inline-block;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.btn-secondary:hover {
+    background-color: #138496;
+}
+
+/* Guest List Summary */
+.guests-list-summary {
+    margin-top: 30px;
+    border-top: 1px solid #eee;
+    padding-top: 20px;
+}
+
+.guests-scroll-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    padding: 10px;
+    background: #fff;
+}
+
+.guest-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.guest-item:last-child {
+    border-bottom: none;
+}
+
+.remove-guest-btn {
+    background: none;
+    border: none;
+    color: #dc3545;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0 5px;
+}
+
+.remove-guest-btn:hover {
+    color: #a71d2a;
+}
+
+.no-guests {
+    text-align: center;
+    color: #999;
+    font-style: italic;
+    padding: 20px;
+}
