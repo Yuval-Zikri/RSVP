@@ -7,9 +7,13 @@ class Event(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
+    subtitle = db.Column(db.String(200), nullable=True) # e.g. "Hila & Ido"
     type = db.Column(db.String(50), nullable=False) # wedding, birthday, etc.
     date = db.Column(db.DateTime, nullable=False)
     location = db.Column(db.String(200), nullable=False)
+    address = db.Column(db.String(500), nullable=True) # Full address from map search
+    latitude = db.Column(db.Float, nullable=True)
+    longitude = db.Column(db.Float, nullable=True)
     background_theme = db.Column(db.String(50), default='default')
     email_background_url = db.Column(db.String(500), nullable=True)  # Unsplash URL for emails
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -20,9 +24,13 @@ class Event(db.Model):
         return {
             'id': self.id,
             'title': self.title,
+            'subtitle': self.subtitle,
             'type': self.type,
             'date': self.date.isoformat(),
             'location': self.location,
+            'address': self.address,
+            'latitude': self.latitude,
+            'longitude': self.longitude,
             'background_theme': self.background_theme,
             'email_background_url': self.email_background_url
         }

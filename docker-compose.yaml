@@ -18,10 +18,13 @@ services:
       - "5000:5000"
     environment:
       DATABASE_URL: postgresql://user:password@postgres:5432/event_db
+      BASE_URL: https://semisentimentally-geyseral-cliff.ngrok-free.dev
     env_file:
       - ./backend/.env
     depends_on:
       - postgres
+    volumes:
+      - ./frontend/src/background:/app/backgrounds
 
   frontend:
     build: ./frontend

@@ -1,11 +1,49 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import axios from 'axios';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
+import { OpenStreetMapProvider } from 'leaflet-geosearch';
+import L from 'leaflet';
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 import './CreateEvent.css';
 import EventPreview from '../../components/EventPreview';
-import { LanguageContext } from '../../App';
-
+import { LanguageContext } from '../../contexts';
 import EVENT_TYPES, { getAllEventTypes, getEventTypeName, getBackgrounds, getEmailBackground } from '../../utils/eventTypes';
+
+let DefaultIcon = L.icon({
+    iconUrl: icon,
+    shadowUrl: iconShadow,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41]
+});
+L.Marker.prototype.options.icon = DefaultIcon;
+
+function LocationMarker({ position, setPosition }) {
+    const map = useMap();
+
+    useEffect(() => {
+        if (position) {
+            map.flyTo(position, 13);
+        }
+    }, [position, map]);
+
+    useMapEvents({
+        click(e) {
+            setPosition(e.latlng);
+        },
+    });
+
+    return position ? (
+        <Marker
+            position={position}
+            draggable={true}
+            eventHandlers={{
+                dragend: (e) => setPosition(e.target.getLatLng())
+            }}
+        />
+    ) : null;
+}
 
 export default function CreateEvent() {
     const context = useContext(LanguageContext);
@@ -13,12 +51,18 @@ export default function CreateEvent() {
     const [step, setStep] = useState(0);
     const [formData, setFormData] = useState({
         title: '',
+        subtitle: '',
         type: 'wedding',
         background: '', // Selected background image
         date: '',
         location: '',
+        address: '',
+        latitude: null,
+        longitude: null,
         guests: [] // Array of {name, email}
     });
+    const [searchResults, setSearchResults] = useState([]);
+    const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState('import');
     const [manualEntry, setManualEntry] = useState({ name: '', email: '' });
@@ -70,17 +114,101 @@ export default function CreateEvent() {
         }));
     };
 
+    const handleSearch = async () => {
+        if (!searchQuery) return;
+        setLoading(true);
+
+        try {
+            // 1. OpenStreetMap Search
+            const provider = new OpenStreetMapProvider({
+                params: {
+                    'accept-language': 'he',
+                    countrycodes: 'il',
+                    addressdetails: 1,
+                },
+            });
+
+            const osmPromise = provider.search({ query: searchQuery })
+                .catch(err => {
+                    console.error("OSM search failed", err);
+                    return [];
+                });
+
+            // 2. Waze Search (via Backend)
+            const wazePromise = axios.get(`/api/search-location?q=${encodeURIComponent(searchQuery)}`)
+                .then(res => res.data || [])
+                .catch(err => {
+                    console.error("Waze search failed", err);
+                    return [];
+                });
+
+            // Run both in parallel
+            const [osmResults, wazeResults] = await Promise.all([osmPromise, wazePromise]);
+
+            // Combine results (Waze first as it might be more relevant for local places)
+            // Filter out duplicates based on label
+            const allResults = [...wazeResults, ...osmResults];
+            const uniqueResults = Array.from(new Map(allResults.map(item => [item.label, item])).values());
+
+            setSearchResults(uniqueResults);
+        } catch (error) {
+            console.error("Search failed", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const selectLocation = (result) => {
+        setFormData(prev => ({
+            ...prev,
+            location: result.label.split(',')[0],
+            address: result.label,
+            latitude: result.y,
+            longitude: result.x
+        }));
+        setSearchResults([]);
+        setSearchQuery(result.label);
+    };
+
+    const setMapPosition = async (latlng) => {
+        setFormData(prev => ({
+            ...prev,
+            latitude: latlng.lat,
+            longitude: latlng.lng
+        }));
+
+        // Reverse Geocoding
+        try {
+            const response = await axios.get(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}&accept-language=he`);
+            if (response.data && response.data.display_name) {
+                const address = response.data.display_name;
+                setSearchQuery(address);
+                setFormData(prev => ({
+                    ...prev,
+                    location: address.split(',')[0], // Try to get a short name
+                    address: address
+                }));
+            }
+        } catch (error) {
+            console.error("Reverse geocoding failed", error);
+        }
+    };
+
     const handleSubmit = async () => {
         setLoading(true);
         try {
             // 1. Create Event
             const eventRes = await axios.post('/api/events', {
                 title: formData.title,
+                subtitle: formData.subtitle,
                 type: formData.type,
                 date: formData.date,
                 location: formData.location,
+                address: formData.address,
+                latitude: formData.latitude,
+                longitude: formData.longitude,
                 background_theme: formData.background || getBackgrounds(formData.type)[0], // Local filename
-                email_background_url: getEmailBackground(formData.type) // Unsplash URL for email
+                email_background_url: formData.background || getBackgrounds(formData.type)[0] // Send filename, backend will construct URL
             });
 
             const eventId = eventRes.data.id;
@@ -143,6 +271,12 @@ export default function CreateEvent() {
                                 onChange={e => setFormData({ ...formData, title: e.target.value })}
                                 placeholder={language === 'en' ? "e.g. Yuval's Wedding" : "לדוגמה: החתונה של יובל"}
                             />
+                            <label>{language === 'en' ? 'Subtitle / Hosts' : 'תת כותרת / מארחים'}</label>
+                            <input
+                                value={formData.subtitle}
+                                onChange={e => setFormData({ ...formData, subtitle: e.target.value })}
+                                placeholder={language === 'en' ? "e.g. Hila & Ido" : "לדוגמה: הילה & עידו"}
+                            />
                             <label>{language === 'en' ? 'Type' : 'סוג'}</label>
                             <select value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value, background: '' })}>
                                 {getAllEventTypes().map(eventType => (
@@ -176,22 +310,48 @@ export default function CreateEvent() {
                                 type="datetime-local"
                                 value={formData.date}
                                 onChange={e => setFormData({ ...formData, date: e.target.value })}
+                                min={new Date().toISOString().slice(0, 16)}
                             />
-                            <label>{language === 'en' ? 'Location' : 'מיקום'}</label>
-                            <div style={{ display: 'flex', gap: '10px' }}>
-                                <input
-                                    value={formData.location}
-                                    onChange={e => setFormData({ ...formData, location: e.target.value })}
-                                    style={{ flex: 1 }}
-                                />
-                                <button
-                                    className="btn btn-secondary"
-                                    onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(formData.location)}`, '_blank')}
-                                    disabled={!formData.location}
-                                    title={language === 'en' ? 'Verify on Google Maps' : 'בדוק בגוגל מפות'}
-                                >
-                                    📍
-                                </button>
+                            <label>{language === 'en' ? 'Location Search' : 'חיפוש מיקום'}</label>
+                            <div className="location-search-container">
+                                <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                                    <input
+                                        value={searchQuery}
+                                        onChange={e => setSearchQuery(e.target.value)}
+                                        placeholder={language === 'en' ? 'Search for a place...' : 'חפש כתובת או מקום...'}
+                                        style={{ flex: 1 }}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                    />
+                                    <button className="btn btn-secondary" onClick={handleSearch}>
+                                        🔍
+                                    </button>
+                                </div>
+
+                                {searchResults.length > 0 && (
+                                    <ul className="search-results-list">
+                                        {searchResults.map((result, idx) => (
+                                            <li key={idx} onClick={() => selectLocation(result)}>
+                                                {result.label}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+
+                                <div className="map-container" style={{ height: '300px', width: '100%', borderRadius: '8px', overflow: 'hidden', border: '1px solid #ccc' }}>
+                                    <MapContainer center={[32.0853, 34.7818]} zoom={13} style={{ height: '100%', width: '100%' }}>
+                                        <TileLayer
+                                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                                        />
+                                        <LocationMarker
+                                            position={formData.latitude && formData.longitude ? { lat: formData.latitude, lng: formData.longitude } : null}
+                                            setPosition={setMapPosition}
+                                        />
+                                    </MapContainer>
+                                </div>
+                                <p style={{ fontSize: '0.8rem', color: '#666', marginTop: '5px' }}>
+                                    {language === 'en' ? '* Click on the map or drag the marker to adjust location' : '* לחץ על המפה או גרור את הסמן כדי לדייק את המיקום'}
+                                </p>
                             </div>
                         </div>
                     )}

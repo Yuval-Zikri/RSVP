@@ -1,16 +1,16 @@
-import React, { useState, useEffect, createContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './styles/theme.css';
 import Sidebar from './components/Sidebar';
-import CreateEvent from './pages/CreateEvent/CreateEvent';
 import Dashboard from './pages/Dashboard/Dashboard';
 import RSVP from './pages/RSVP/RSVP';
+import { ThemeContext, LanguageContext } from './contexts';
+import ErrorBoundary from './components/ErrorBoundary';
 
-export const ThemeContext = createContext();
-export const LanguageContext = createContext();
+const CreateEvent = React.lazy(() => import('./pages/CreateEvent/CreateEvent'));
 
 function App() {
-  const [theme, setTheme] = useState('light');
+  const [theme, setTheme] = useState(window.location.pathname.startsWith('/rsvp') ? 'dark' : 'light');
   const [language, setLanguage] = useState('en'); // 'en' or 'he'
 
   useEffect(() => {
@@ -26,7 +26,9 @@ function App() {
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
       <LanguageContext.Provider value={{ language, setLanguage }}>
         <Router>
-          <AppContent />
+          <ErrorBoundary>
+            <AppContent />
+          </ErrorBoundary>
         </Router>
       </LanguageContext.Provider>
     </ThemeContext.Provider>
@@ -35,8 +37,6 @@ function App() {
 
 function AppContent() {
   const { language } = React.useContext(LanguageContext);
-  const location = window.location;
-  // Check if current path is RSVP page
   const isRSVP = window.location.pathname.startsWith('/rsvp');
 
   return (
@@ -44,15 +44,16 @@ function AppContent() {
       {!isRSVP && <Sidebar />}
 
       <main className="main-content" style={isRSVP ? { padding: 0, width: '100%' } : {}}>
-        <Routes>
-          <Route path="/" element={<CreateEvent />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/rsvp/:token" element={<RSVP />} />
-        </Routes>
+        <React.Suspense fallback={<div>Loading...</div>}>
+          <Routes>
+            <Route path="/" element={<CreateEvent />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/rsvp/:token" element={<RSVP />} />
+          </Routes>
+        </React.Suspense>
       </main>
     </div>
   );
 }
-
 
 export default App;

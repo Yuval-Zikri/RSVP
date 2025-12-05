@@ -30,6 +30,11 @@ export default function RSVP() {
             }
         };
         fetchInvite();
+
+        // Set default theme to dark
+        if (!document.body.getAttribute('data-theme')) {
+            document.body.setAttribute('data-theme', 'dark');
+        }
     }, [token]);
 
     const handleSubmit = async () => {
@@ -60,100 +65,102 @@ export default function RSVP() {
     };
 
     return (
-        <div className="rsvp-page" style={{ backgroundImage: `url(${getBackgroundUrl(event.background_theme)})` }}>
-            <button className="theme-toggle-btn" onClick={toggleTheme}>
-                🌓
-            </button>
+        <div className="rsvp-page-wrapper">
+            <div className="rsvp-phone-container" style={{ backgroundImage: `url(${getBackgroundUrl(event.background_theme)})` }}>
+                <button className="theme-toggle-btn" onClick={toggleTheme}>
+                    🌓
+                </button>
 
-            <div className="rsvp-card">
-                <div className="event-header">
-                    <span className="event-label">WEDDING</span>
-                    <h1>{event.title}</h1>
-                </div>
-
-                <div className="event-info">
-                    <div className="info-item">
-                        <span className="icon">📅</span>
-                        <p>{new Date(event.date).toLocaleString()}</p>
+                <div className="rsvp-card">
+                    <div className="event-header">
+                        <span className="event-label">WEDDING</span>
+                        <h1>{event.title}</h1>
                     </div>
-                    <div className="info-item">
-                        <span className="icon">📍</span>
-                        <p>{event.location}</p>
-                    </div>
-                </div>
 
-                <div className="location-actions">
-                    {event.latitude && event.longitude ? (
-                        <>
-                            <a
-                                href={`https://waze.com/ul?ll=${event.latitude},${event.longitude}&navigate=yes`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn-location waze"
-                            >
-                                Navigate with Waze
-                            </a>
-                            <a
-                                href={`https://www.google.com/maps/search/?api=1&query=${event.latitude},${event.longitude}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn-location google"
-                            >
-                                Google Maps
-                            </a>
-                        </>
-                    ) : (
-                        <>
-                            <a
-                                href={`https://waze.com/ul?q=${encodeURIComponent(event.location)}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn-location waze"
-                            >
-                                Navigate with Waze
-                            </a>
-                            <a
-                                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn-location google"
-                            >
-                                Google Maps
-                            </a>
-                        </>
-                    )}
-                </div>
-
-                <div className="guest-welcome">
-                    <p>Hello <strong>{invite.name}</strong>,</p>
-                    <p>We would love to see you there!</p>
-                </div>
-
-                <div className="rsvp-form-section">
-                    <select
-                        value={formData.status}
-                        onChange={e => setFormData({ ...formData, status: e.target.value })}
-                        className="status-select"
-                    >
-                        <option value="attending">✅ I'll be there</option>
-                        <option value="not_attending">❌ Can't make it</option>
-                    </select>
-
-                    {formData.status === 'attending' && (
-                        <div className="guests-input">
-                            <label>Additional Guests:</label>
-                            <input
-                                type="number"
-                                min="0"
-                                value={formData.guests_count}
-                                onChange={e => setFormData({ ...formData, guests_count: parseInt(e.target.value) })}
-                            />
+                    <div className="event-info">
+                        <div className="info-item">
+                            <span className="icon">📅</span>
+                            <p>{new Date(event.date).toLocaleString()}</p>
                         </div>
-                    )}
+                        <div className="info-item">
+                            <span className="icon">📍</span>
+                            <p>{event.location}</p>
+                        </div>
+                    </div>
 
-                    <button className="btn-submit" onClick={handleSubmit}>
-                        {invite.status === 'pending' ? 'RSVP Now' : 'Update RSVP'}
-                    </button>
+                    <div className="location-actions">
+                        {event.latitude && event.longitude ? (
+                            <>
+                                <a
+                                    href={`https://waze.com/ul?ll=${event.latitude},${event.longitude}&navigate=yes`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="btn-location waze"
+                                >
+                                    Navigate with Waze
+                                </a>
+                                <a
+                                    href={`https://www.google.com/maps/search/?api=1&query=${event.latitude},${event.longitude}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="btn-location google"
+                                >
+                                    Google Maps
+                                </a>
+                            </>
+                        ) : (
+                            <>
+                                <a
+                                    href={`https://waze.com/ul?q=${encodeURIComponent(event.location)}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="btn-location waze"
+                                >
+                                    Navigate with Waze
+                                </a>
+                                <a
+                                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="btn-location google"
+                                >
+                                    Google Maps
+                                </a>
+                            </>
+                        )}
+                    </div>
+
+                    <div className="guest-welcome">
+                        <p>Hello <strong>{invite.name}</strong>,</p>
+                        <p>We would love to see you there!</p>
+                    </div>
+
+                    <div className="rsvp-form-section">
+                        <select
+                            value={formData.status}
+                            onChange={e => setFormData({ ...formData, status: e.target.value })}
+                            className="status-select"
+                        >
+                            <option value="attending">✅ I'll be there</option>
+                            <option value="not_attending">❌ Can't make it</option>
+                        </select>
+
+                        {formData.status === 'attending' && (
+                            <div className="guests-input">
+                                <label>Additional Guests:</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={formData.guests_count}
+                                    onChange={e => setFormData({ ...formData, guests_count: parseInt(e.target.value) })}
+                                />
+                            </div>
+                        )}
+
+                        <button className="btn-submit" onClick={handleSubmit}>
+                            {invite.status === 'pending' ? 'RSVP Now' : 'Update RSVP'}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

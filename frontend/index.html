@@ -10,6 +10,17 @@
 
 <body>
   <div id="root"></div>
+  <script>
+    window.onerror = function (message, source, lineno, colno, error) {
+      const errorDiv = document.createElement('div');
+      errorDiv.style.color = 'red';
+      errorDiv.style.padding = '20px';
+      errorDiv.style.fontFamily = 'monospace';
+      errorDiv.style.whiteSpace = 'pre-wrap';
+      errorDiv.innerText = `Global Error:\n${message}\nSource: ${source}:${lineno}:${colno}\nStack: ${error ? error.stack : 'N/A'}`;
+      document.body.appendChild(errorDiv);
+    };
+  </script>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 

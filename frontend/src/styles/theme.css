@@ -181,6 +181,16 @@ textarea {
   box-sizing: border-box;
 }
 
+
+/* DateTime Picker Dark Mode Support */
+input[type="datetime-local"] {
+  color-scheme: light dark;
+}
+
+[data-theme='dark'] input[type="datetime-local"] {
+  color-scheme: dark;
+}
+
 /* Split View for Create Event */
 .split-view {
   display: grid;

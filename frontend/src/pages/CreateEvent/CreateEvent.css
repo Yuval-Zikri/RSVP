@@ -129,7 +129,7 @@
 /* Guest Import Tabs */
 .guest-import-tabs {
     display: flex;
-    border-bottom: 2px solid #e0e0e0;
+    border-bottom: 2px solid var(--border-color);
     margin-bottom: 20px;
 }
 
@@ -139,7 +139,7 @@
     background: none;
     font-size: 1rem;
     cursor: pointer;
-    color: #666;
+    color: var(--secondary-color);
     border-bottom: 2px solid transparent;
     margin-bottom: -2px;
     transition: all 0.3s ease;
@@ -152,7 +152,7 @@
 }
 
 .tab-btn:hover:not(.active) {
-    color: #333;
+    color: var(--text-color);
 }
 
 /* Import Section */
@@ -175,10 +175,10 @@
 }
 
 .file-upload-container {
-    border: 2px dashed #ccc;
+    border: 2px dashed var(--border-color);
     padding: 30px;
     border-radius: 8px;
-    background: #f9f9f9;
+    background: var(--bg-color);
     margin-bottom: 20px;
 }
 
@@ -196,7 +196,7 @@
 
 .file-name {
     font-size: 0.8rem;
-    color: #666;
+    color: var(--secondary-color);
 }
 
 /* Manual Add Section */
@@ -213,9 +213,11 @@
 .manual-input-group input {
     flex: 1;
     padding: 10px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border-color);
     border-radius: 4px;
     font-size: 1rem;
+    background-color: var(--input-bg);
+    color: var(--text-color);
 }
 
 .btn-success {
@@ -254,17 +256,17 @@
 /* Guest List Summary */
 .guests-list-summary {
     margin-top: 30px;
-    border-top: 1px solid #eee;
+    border-top: 1px solid var(--border-color);
     padding-top: 20px;
 }
 
 .guests-scroll-list {
     max-height: 200px;
     overflow-y: auto;
-    border: 1px solid #eee;
+    border: 1px solid var(--border-color);
     border-radius: 4px;
     padding: 10px;
-    background: #fff;
+    background: var(--input-bg);
 }
 
 .guest-item {
@@ -272,7 +274,8 @@
     justify-content: space-between;
     align-items: center;
     padding: 8px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-color);
 }
 
 .guest-item:last-child {
@@ -294,7 +297,53 @@
 
 .no-guests {
     text-align: center;
-    color: #999;
+    color: var(--secondary-color);
     font-style: italic;
     padding: 20px;
+}
+
+/* Location Search Styles */
+.location-search-container {
+    position: relative;
+    width: 100%;
+}
+
+.search-results-list {
+    position: absolute;
+    top: 45px;
+    /* Adjust based on input height */
+    left: 0;
+    right: 0;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.search-results-list li {
+    padding: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-color);
+    text-align: left;
+}
+
+.search-results-list li:hover {
+    background-color: var(--bg-color);
+}
+
+.search-results-list li:last-child {
+    border-bottom: none;
+}
+
+.map-container {
+    margin-top: 10px;
+    z-index: 1;
+    /* Ensure map is below search results */
 }

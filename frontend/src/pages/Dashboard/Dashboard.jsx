@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import * as XLSX from 'xlsx';
 import './Dashboard.css';
 
 export default function Dashboard() {
@@ -58,6 +59,39 @@ export default function Dashboard() {
         // axios.post('/api/reminders', { email, event_id: selectedEvent.id })
     };
 
+    const handleRemindAll = () => {
+        const pendingRsvps = rsvps.filter(r => r.status === 'pending');
+        if (pendingRsvps.length === 0) {
+            alert('No pending RSVPs to remind');
+            return;
+        }
+
+        if (window.confirm(`Send reminders to ${pendingRsvps.length} pending guests?`)) {
+            pendingRsvps.forEach(r => sendReminder(r.email));
+            alert(`Sent reminders to ${pendingRsvps.length} guests`);
+        }
+    };
+
+    const handleExportToExcel = () => {
+        if (rsvps.length === 0) {
+            alert('No data to export');
+            return;
+        }
+
+        const exportData = rsvps.map(r => ({
+            Name: r.name,
+            Email: r.email,
+            Status: r.status,
+            Guests: r.guests_count || 0,
+            Total: r.status === 'attending' ? (1 + (r.guests_count || 0)) : 0
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Guest List");
+        XLSX.writeFile(wb, `${selectedEvent.title}_guests.xlsx`);
+    };
+
     return (
         <div className="dashboard-container">
             <div className="events-list card">
@@ -94,6 +128,15 @@ export default function Dashboard() {
                                 <span className="stat-label">Attending</span>
                             </div>
                             <div className="stat-box">
+                                <span className="stat-value">
+                                    {rsvps
+                                        .filter(r => r.status === 'attending')
+                                        .reduce((sum, r) => sum + 1 + (r.guests_count || 0), 0)
+                                    }
+                                </span>
+                                <span className="stat-label">Total People</span>
+                            </div>
+                            <div className="stat-box">
                                 <span className="stat-value">{rsvps.filter(r => r.status === 'pending').length}</span>
                                 <span className="stat-label">Pending</span>
                             </div>
@@ -103,7 +146,25 @@ export default function Dashboard() {
                             </div>
                         </div>
 
-                        <h4>Guest List</h4>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <h4 style={{ margin: 0 }}>Guest List</h4>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={handleRemindAll}
+                                    disabled={rsvps.filter(r => r.status === 'pending').length === 0}
+                                >
+                                    📧 Remind All Pending
+                                </button>
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={handleExportToExcel}
+                                    disabled={rsvps.length === 0}
+                                >
+                                    📊 Export to Excel
+                                </button>
+                            </div>
+                        </div>
                         <div className="table-responsive">
                             <table className="rsvp-table">
                                 <thead>
@@ -111,6 +172,7 @@ export default function Dashboard() {
                                         <th>Name</th>
                                         <th>Status</th>
                                         <th>Guests</th>
+                                        <th>Total</th>
                                         <th>Action</th>
                                     </tr>
                                 </thead>
@@ -123,6 +185,9 @@ export default function Dashboard() {
                                             </td>
                                             <td>{r.guests_count}</td>
                                             <td>
+                                                {r.status === 'attending' ? (1 + (r.guests_count || 0)) : '-'}
+                                            </td>
+                                            <td>
                                                 {r.status === 'pending' && (
                                                     <button className="btn-small" onClick={() => sendReminder(r.email)}>Remind</button>
                                                 )}
@@ -131,7 +196,7 @@ export default function Dashboard() {
                                     ))}
                                     {rsvps.length === 0 && (
                                         <tr>
-                                            <td colSpan="4" style={{ textAlign: 'center' }}>No guests found for this event.</td>
+                                            <td colSpan="5" style={{ textAlign: 'center' }}>No guests found for this event.</td>
                                         </tr>
                                     )}
                                 </tbody>

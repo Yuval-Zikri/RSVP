@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { getEventTypeName, getBackgrounds } from '../utils/eventTypes';
-import { LanguageContext } from '../App';
+import { LanguageContext } from '../contexts';
 import '../styles/theme.css';
 
 const EventPreview = ({ formData }) => {
@@ -19,7 +19,7 @@ const EventPreview = ({ formData }) => {
 
         return {
             backgroundImage: `url(${new URL(`../background/${imageName}`, import.meta.url).href})`,
-            backgroundSize: 'contain',
+            backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat'
         };
@@ -27,8 +27,9 @@ const EventPreview = ({ formData }) => {
 
     return (
         <div className="preview-container card" style={{
-            height: '100%',
-            minHeight: '500px',
+            width: '360px', // Fixed mobile width
+            height: '640px', // Fixed mobile height (16:9 ratio)
+            margin: '0 auto',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'center',
@@ -37,14 +38,17 @@ const EventPreview = ({ formData }) => {
             position: 'relative',
             overflow: 'hidden',
             backgroundColor: 'var(--bg-color)',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)', // Enhanced shadow for "device" feel
+            borderRadius: '20px', // Rounded corners like a phone
             ...getBackgroundImage()
         }}>
             <div className="preview-content" style={{
-                padding: '2rem',
+                padding: '1.5rem',
                 background: 'rgba(255,255,255,0.95)',
                 borderRadius: '16px',
                 backdropFilter: 'blur(10px)',
-                maxWidth: '80%',
+                maxWidth: '400px', // Reduced width to show more background
+                width: '90%',
                 zIndex: 2,
                 position: 'relative',
                 boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
@@ -58,19 +62,65 @@ const EventPreview = ({ formData }) => {
                 }}>
                     {getEventTypeName(type, language)}
                 </span>
-                <h1 style={{ margin: '1rem 0', fontSize: '2.5rem', color: '#333' }}>
+                <h1 style={{ margin: '1rem 0', fontSize: '2.5rem', color: '#333', lineHeight: 1.2 }}>
                     {title || 'Event Title'}
                 </h1>
-                <div className="preview-details" style={{ marginTop: '2rem' }}>
-                    <p style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>
-                        📅 {date ? new Date(date).toLocaleString() : 'Date & Time'}
+                {formData.subtitle && (
+                    <h2 style={{
+                        margin: '0 0 2rem 0',
+                        fontSize: '1.5rem',
+                        color: '#666',
+                        fontFamily: 'Georgia, serif',
+                        fontStyle: 'italic',
+                        fontWeight: 'normal'
+                    }}>
+                        {formData.subtitle}
+                    </h2>
+                )}
+                <div className="preview-details" style={{ marginTop: '2rem', textAlign: 'left', display: 'inline-block', color: '#333' }}>
+                    <p style={{ fontSize: '1.1rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center' }}>
+                        <span style={{ marginRight: '10px', fontSize: '1.2rem' }}>📅</span>
+                        {date ? new Date(date).toLocaleString() : 'Date & Time'}
                     </p>
-                    <p style={{ fontSize: '1.2rem' }}>
-                        📍 {location || 'Location'}
+                    <p style={{ fontSize: '1.1rem', display: 'flex', alignItems: 'center' }}>
+                        <span style={{ marginRight: '10px', fontSize: '1.2rem' }}>📍</span>
+                        {location || 'Location'}
                     </p>
                 </div>
-                <div style={{ marginTop: '3rem' }}>
-                    <button className="btn btn-primary" style={{ pointerEvents: 'none' }}>RSVP Now</button>
+
+                <div style={{ marginTop: '2.5rem' }}>
+                    <button className="btn btn-primary" style={{ pointerEvents: 'none', width: '100%', padding: '12px', borderRadius: '50px', fontWeight: 'bold' }}>RSVP Now</button>
+                </div>
+
+                <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'center', gap: '10px' }}>
+                    <button className="btn btn-outline" style={{
+                        fontSize: '0.9rem',
+                        padding: '8px 16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        background: 'white',
+                        border: '1px solid #007bff',
+                        color: '#007bff',
+                        borderRadius: '50px',
+                        cursor: 'pointer'
+                    }}>
+                        🚗 Waze
+                    </button>
+                    <button className="btn btn-outline" style={{
+                        fontSize: '0.9rem',
+                        padding: '8px 16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        background: 'white',
+                        border: '1px solid #007bff',
+                        color: '#007bff',
+                        borderRadius: '50px',
+                        cursor: 'pointer'
+                    }}>
+                        🗺️ Maps
+                    </button>
                 </div>
             </div>
         </div>

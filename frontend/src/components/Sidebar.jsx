@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ThemeContext, LanguageContext } from '../App';
+import { ThemeContext, LanguageContext } from '../contexts';
 import '../styles/theme.css';
 
 const Sidebar = () => {
