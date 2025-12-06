@@ -91,6 +91,186 @@ def search_location():
 def serve_background(filename):
     return send_from_directory('/app/backgrounds', filename)
 
+# --- Helper Functions ---
+def generate_email_html(event, guest_name, rsvp_link):
+    """Generate HTML email body for invitations and reminders"""
+    # Ensure we have a valid URL for the email background
+    bg_url = event.email_background_url
+    print(f"DEBUG: Raw email_background_url: {bg_url}")
+    
+    attachment_cid = None
+    
+    if bg_url and not bg_url.startswith('http'):
+         # It's a local filename, try to attach it
+         file_path = os.path.join('/app/backgrounds', bg_url)
+         if os.path.exists(file_path):
+             attachment_cid = bg_url # Use filename as CID
+             bg_url = f"cid:{attachment_cid}"
+             print(f"DEBUG: Attaching local file: {file_path} as CID: {attachment_cid}")
+         else:
+             print(f"DEBUG: Local file not found: {file_path}")
+             # Fallback to a default Unsplash image if file not found
+             bg_url = 'https://images.unsplash.com/photo-1519751138087-5bf79df62d58?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80'
+    elif not bg_url:
+        # Fallback to a default Unsplash image if no valid URL is present
+        bg_url = 'https://images.unsplash.com/photo-1519751138087-5bf79df62d58?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80'
+    
+    print(f"DEBUG: Final bg_url: {bg_url}")
+
+    html_body = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {{ margin: 0; padding: 0; width: 100% !important; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; background-color: transparent; }}
+            img {{ border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic; }}
+            .btn-primary {{ 
+                background-color: #007bff; 
+                color: #ffffff; 
+                padding: 14px 28px; 
+                text-decoration: none; 
+                border-radius: 50px; 
+                font-weight: bold; 
+                display: inline-block;
+                mso-padding-alt: 0;
+                text-underline-color: #007bff;
+            }}
+            .btn-nav {{
+                background-color: #ffffff;
+                color: #007bff;
+                border: 1px solid #007bff;
+                padding: 8px 16px;
+                text-decoration: none;
+                border-radius: 50px;
+                font-size: 14px;
+                display: inline-block;
+                margin: 0 5px;
+            }}
+        </style>
+    </head>
+    <body style="margin: 0; padding: 0; background-color: transparent;">
+        <!-- Main Table Container (Full Width Gray Background) -->
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" height="100%" style="min-height: 100vh; background-color: transparent;">
+            <tr>
+                <td align="center" valign="top" style="padding: 40px 0;">
+                    
+                    <!-- Phone Container (Centered, Fixed Width) -->
+                    <!-- Using max-width 500px to match mobile preview -->
+                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 500px; width: 100%; margin: 0 auto; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.2);">
+                        <tr>
+                            <td align="center" valign="middle" background="{bg_url}" style="padding: 0; background-image: url('{bg_url}'); background-size: cover; background-position: center; background-repeat: no-repeat; background-color: #e6f7ff; height: 640px;">
+                                <!--[if gte mso 9]>
+                                <v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="width:500px;height:640px;">
+                                <v:fill type="frame" src="{bg_url}" color="#e6f7ff" />
+                                <v:textbox inset="0,0,0,0">
+                                <![endif]-->
+                                
+                                <!-- Content Wrapper (to center the card vertically if needed, or just padding) -->
+                                <div style="padding: 20px;">
+                                    <!-- Card Container -->
+                                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: rgba(255, 255, 255, 0.95); border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); backdrop-filter: blur(10px);">
+                                        <tr>
+                                            <td align="center" style="padding: 30px 20px;">
+                                                
+                                                <!-- Event Type -->
+                                                <div style="text-transform: uppercase; letter-spacing: 2px; font-size: 12px; color: #666; margin-bottom: 10px; font-weight: bold; font-family: Helvetica, Arial, sans-serif;">
+                                                    {event.type.upper()}
+                                                </div>
+
+                                                <!-- Event Title -->
+                                                <h1 style="margin: 10px 0; font-size: 28px; font-weight: 700; color: #1a1a1a; line-height: 1.2; font-family: Helvetica, Arial, sans-serif;">
+                                                    {event.title}
+                                                </h1>
+
+                                                <!-- Subtitle -->
+                                                {f'<div style="font-size: 18px; color: #4a4a4a; margin-bottom: 20px; font-family: Georgia, serif; font-style: italic;">{event.subtitle}</div>' if event.subtitle else ''}
+
+                                                <!-- Details -->
+                                                <table border="0" cellpadding="0" cellspacing="0" style="margin: 20px auto; text-align: left;">
+                                                    <tr>
+                                                        <td style="padding: 5px 0; font-size: 14px; color: #333; font-family: Helvetica, Arial, sans-serif;">
+                                                            <span style="margin-right: 8px; font-size: 16px;">📅</span>
+                                                            {event.date.strftime('%A, %B %d, %Y')} at {event.date.strftime('%I:%M %p')}
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="padding: 5px 0; font-size: 14px; color: #333; font-family: Helvetica, Arial, sans-serif;">
+                                                            <span style="margin-right: 8px; font-size: 16px;">📍</span>
+                                                            {event.location}
+                                                        </td>
+                                                    </tr>
+                                                </table>
+
+                                                <!-- RSVP Button -->
+                                                <div style="margin-top: 20px; margin-bottom: 20px;">
+                                                    <!--[if mso]>
+                                                    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{rsvp_link}" style="height:40px;v-text-anchor:middle;width:160px;" arcsize="50%" stroke="f" fillcolor="#007bff">
+                                                    <w:anchorlock/>
+                                                    <center>
+                                                    <![endif]-->
+                                                        <a href="{rsvp_link}" class="btn-primary" style="color: #ffffff; font-family: Helvetica, Arial, sans-serif; padding: 10px 24px; font-size: 14px;">RSVP Now</a>
+                                                    <!--[if mso]>
+                                                    </center>
+                                                    </v:roundrect>
+                                                    <![endif]-->
+                                                </div>
+
+                                                <!-- Navigation Buttons -->
+                                                {f'''
+                                                <table border="0" cellpadding="0" cellspacing="0" style="margin: 15px auto 0 auto;">
+                                                    <tr>
+                                                        <td style="padding: 0 5px;">
+                                                            <!--[if mso]>
+                                                            <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="https://waze.com/ul?ll={event.latitude},{event.longitude}&navigate=yes" style="height:32px;v-text-anchor:middle;width:100px;" arcsize="50%" strokecolor="#007bff" fillcolor="#ffffff">
+                                                            <w:anchorlock/>
+                                                            <center style="color:#007bff;font-family:Helvetica, Arial,sans-serif;font-size:12px;font-weight:bold;">Waze</center>
+                                                            </v:roundrect>
+                                                            <![endif]-->
+                                                            <a href="https://waze.com/ul?ll={event.latitude},{event.longitude}&navigate=yes" style="background-color: #ffffff; color: #007bff; border: 1px solid #007bff; padding: 8px 20px; text-decoration: none; border-radius: 50px; font-size: 12px; font-weight: bold; display: inline-block; font-family: Helvetica, Arial, sans-serif; mso-hide:all;">🚗 Waze</a>
+                                                        </td>
+                                                        <td style="padding: 0 5px;">
+                                                            <!--[if mso]>
+                                                            <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="https://www.google.com/maps/search/?api=1&query={event.latitude},{event.longitude}" style="height:32px;v-text-anchor:middle;width:100px;" arcsize="50%" strokecolor="#007bff" fillcolor="#ffffff">
+                                                            <w:anchorlock/>
+                                                            <center style="color:#007bff;font-family:Helvetica, Arial,sans-serif;font-size:12px;font-weight:bold;">Maps</center>
+                                                            </v:roundrect>
+                                                            <![endif]-->
+                                                            <a href="https://www.google.com/maps/search/?api=1&query={event.latitude},{event.longitude}" style="background-color: #ffffff; color: #007bff; border: 1px solid #007bff; padding: 8px 20px; text-decoration: none; border-radius: 50px; font-size: 12px; font-weight: bold; display: inline-block; font-family: Helvetica, Arial, sans-serif; mso-hide:all;">🗺️ Maps</a>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                                ''' if event.latitude and event.longitude else ''}
+
+                                                <!-- Footer -->
+                                                <div style="margin-top: 20px; font-size: 10px; color: #888; border-top: 1px solid #eee; padding-top: 15px; font-family: Helvetica, Arial, sans-serif;">
+                                                    <p style="margin: 3px 0;">Hello {guest_name}, we can't wait to see you!</p>
+                                                    <p style="margin: 3px 0;">If the button doesn't work: <br><a href="{rsvp_link}" style="color: #007bff; text-decoration: none;">Link</a></p>
+                                                </div>
+
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+
+                                <!--[if gte mso 9]>
+                                </v:textbox>
+                                </v:rect>
+                                <![endif]-->
+                            </td>
+                        </tr>
+                    </table>
+
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>
+    """
+    
+    return html_body, attachment_cid
+
 # --- Events ---
 @api_bp.route('/events', methods=['POST'])
 def create_event():
@@ -151,181 +331,7 @@ def send_invitations():
             base_url = os.getenv('BASE_URL', 'http://localhost:3000').rstrip('/')
             rsvp_link = f"{base_url}/rsvp/{token}"
             
-            # Ensure we have a valid URL for the email background
-            bg_url = event.email_background_url
-            print(f"DEBUG: Raw email_background_url: {bg_url}")
-            print(f"DEBUG: BASE_URL env var: {os.getenv('BASE_URL')}")
-            
-            attachment_cid = None
-            
-            if bg_url and not bg_url.startswith('http'):
-                 # It's a local filename, try to attach it
-                 file_path = os.path.join('/app/backgrounds', bg_url)
-                 if os.path.exists(file_path):
-                     attachment_cid = bg_url # Use filename as CID
-                     bg_url = f"cid:{attachment_cid}"
-                     print(f"DEBUG: Attaching local file: {file_path} as CID: {attachment_cid}")
-                 else:
-                     print(f"DEBUG: Local file not found: {file_path}")
-                     # Fallback to a default Unsplash image if file not found
-                     bg_url = 'https://images.unsplash.com/photo-1519751138087-5bf79df62d58?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80'
-            elif not bg_url:
-                # Fallback to a default Unsplash image if no valid URL is present
-                bg_url = 'https://images.unsplash.com/photo-1519751138087-5bf79df62d58?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80'
-            
-            print(f"DEBUG: Final bg_url: {bg_url}")
-
-            html_body = f"""
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="utf-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <style>
-                    body {{ margin: 0; padding: 0; width: 100% !important; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; background-color: #f0f0f0; }}
-                    img {{ border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic; }}
-                    .btn-primary {{ 
-                        background-color: #007bff; 
-                        color: #ffffff; 
-                        padding: 14px 28px; 
-                        text-decoration: none; 
-                        border-radius: 50px; 
-                        font-weight: bold; 
-                        display: inline-block;
-                        mso-padding-alt: 0;
-                        text-underline-color: #007bff;
-                    }}
-                    .btn-nav {{
-                        background-color: #ffffff;
-                        color: #007bff;
-                        border: 1px solid #007bff;
-                        padding: 8px 16px;
-                        text-decoration: none;
-                        border-radius: 50px;
-                        font-size: 14px;
-                        display: inline-block;
-                        margin: 0 5px;
-                    }}
-                </style>
-            </head>
-            <body style="margin: 0; padding: 0; background-color: #f0f0f0;">
-                <!-- Main Table Container (Full Width Gray Background) -->
-                <table border="0" cellpadding="0" cellspacing="0" width="100%" height="100%" style="min-height: 100vh; background-color: #f0f0f0;">
-                    <tr>
-                        <td align="center" valign="top" style="padding: 40px 0;">
-                            
-                            <!-- Phone Container (Centered, Fixed Width) -->
-                            <!-- Using max-width 500px to match mobile preview -->
-                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 500px; width: 100%; margin: 0 auto; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.2);">
-                                <tr>
-                                    <td align="center" valign="middle" background="{bg_url}" style="padding: 0; background-image: url('{bg_url}'); background-size: cover; background-position: center; background-repeat: no-repeat; background-color: #e6f7ff; height: 640px;">
-                                        <!--[if gte mso 9]>
-                                        <v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="width:500px;height:640px;">
-                                        <v:fill type="frame" src="{bg_url}" color="#e6f7ff" />
-                                        <v:textbox inset="0,0,0,0">
-                                        <![endif]-->
-                                        
-                                        <!-- Content Wrapper (to center the card vertically if needed, or just padding) -->
-                                        <div style="padding: 20px;">
-                                            <!-- Card Container -->
-                                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: rgba(255, 255, 255, 0.95); border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); backdrop-filter: blur(10px);">
-                                                <tr>
-                                                    <td align="center" style="padding: 30px 20px;">
-                                                        
-                                                        <!-- Event Type -->
-                                                        <div style="text-transform: uppercase; letter-spacing: 2px; font-size: 12px; color: #666; margin-bottom: 10px; font-weight: bold; font-family: Helvetica, Arial, sans-serif;">
-                                                            {event.type.upper()}
-                                                        </div>
-
-                                                        <!-- Event Title -->
-                                                        <h1 style="margin: 10px 0; font-size: 28px; font-weight: 700; color: #1a1a1a; line-height: 1.2; font-family: Helvetica, Arial, sans-serif;">
-                                                            {event.title}
-                                                        </h1>
-
-                                                        <!-- Subtitle -->
-                                                        {f'<div style="font-size: 18px; color: #4a4a4a; margin-bottom: 20px; font-family: Georgia, serif; font-style: italic;">{event.subtitle}</div>' if event.subtitle else ''}
-
-                                                        <!-- Details -->
-                                                        <table border="0" cellpadding="0" cellspacing="0" style="margin: 20px auto; text-align: left;">
-                                                            <tr>
-                                                                <td style="padding: 5px 0; font-size: 14px; color: #333; font-family: Helvetica, Arial, sans-serif;">
-                                                                    <span style="margin-right: 8px; font-size: 16px;">📅</span>
-                                                                    {event.date.strftime('%A, %B %d, %Y')} at {event.date.strftime('%I:%M %p')}
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td style="padding: 5px 0; font-size: 14px; color: #333; font-family: Helvetica, Arial, sans-serif;">
-                                                                    <span style="margin-right: 8px; font-size: 16px;">📍</span>
-                                                                    {event.location}
-                                                                </td>
-                                                            </tr>
-                                                        </table>
-
-                                                        <!-- RSVP Button -->
-                                                        <div style="margin-top: 20px; margin-bottom: 20px;">
-                                                            <!--[if mso]>
-                                                            <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{rsvp_link}" style="height:40px;v-text-anchor:middle;width:160px;" arcsize="50%" stroke="f" fillcolor="#007bff">
-                                                            <w:anchorlock/>
-                                                            <center>
-                                                            <![endif]-->
-                                                                <a href="{rsvp_link}" class="btn-primary" style="color: #ffffff; font-family: Helvetica, Arial, sans-serif; padding: 10px 24px; font-size: 14px;">RSVP Now</a>
-                                                            <!--[if mso]>
-                                                            </center>
-                                                            </v:roundrect>
-                                                            <![endif]-->
-                                                        </div>
-
-                                                        <!-- Navigation Buttons -->
-                                                        {f'''
-                                                        <table border="0" cellpadding="0" cellspacing="0" style="margin: 15px auto 0 auto;">
-                                                            <tr>
-                                                                <td style="padding: 0 5px;">
-                                                                    <!--[if mso]>
-                                                                    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="https://waze.com/ul?ll={event.latitude},{event.longitude}&navigate=yes" style="height:32px;v-text-anchor:middle;width:100px;" arcsize="50%" strokecolor="#007bff" fillcolor="#ffffff">
-                                                                    <w:anchorlock/>
-                                                                    <center style="color:#007bff;font-family:Helvetica, Arial,sans-serif;font-size:12px;font-weight:bold;">Waze</center>
-                                                                    </v:roundrect>
-                                                                    <![endif]-->
-                                                                    <a href="https://waze.com/ul?ll={event.latitude},{event.longitude}&navigate=yes" style="background-color: #ffffff; color: #007bff; border: 1px solid #007bff; padding: 8px 20px; text-decoration: none; border-radius: 50px; font-size: 12px; font-weight: bold; display: inline-block; font-family: Helvetica, Arial, sans-serif; mso-hide:all;">🚗 Waze</a>
-                                                                </td>
-                                                                <td style="padding: 0 5px;">
-                                                                    <!--[if mso]>
-                                                                    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="https://www.google.com/maps/search/?api=1&query={event.latitude},{event.longitude}" style="height:32px;v-text-anchor:middle;width:100px;" arcsize="50%" strokecolor="#007bff" fillcolor="#ffffff">
-                                                                    <w:anchorlock/>
-                                                                    <center style="color:#007bff;font-family:Helvetica, Arial,sans-serif;font-size:12px;font-weight:bold;">Maps</center>
-                                                                    </v:roundrect>
-                                                                    <![endif]-->
-                                                                    <a href="https://www.google.com/maps/search/?api=1&query={event.latitude},{event.longitude}" style="background-color: #ffffff; color: #007bff; border: 1px solid #007bff; padding: 8px 20px; text-decoration: none; border-radius: 50px; font-size: 12px; font-weight: bold; display: inline-block; font-family: Helvetica, Arial, sans-serif; mso-hide:all;">🗺️ Maps</a>
-                                                                </td>
-                                                            </tr>
-                                                        </table>
-                                                        ''' if event.latitude and event.longitude else ''}
-
-                                                        <!-- Footer -->
-                                                        <div style="margin-top: 20px; font-size: 10px; color: #888; border-top: 1px solid #eee; padding-top: 15px; font-family: Helvetica, Arial, sans-serif;">
-                                                            <p style="margin: 3px 0;">Hello {guest['name']}, we can't wait to see you!</p>
-                                                            <p style="margin: 3px 0;">If the button doesn't work: <br><a href="{rsvp_link}" style="color: #007bff; text-decoration: none;">Link</a></p>
-                                                        </div>
-
-                                                    </td>
-                                                </tr>
-                                            </table>
-                                        </div>
-
-                                        <!--[if gte mso 9]>
-                                        </v:textbox>
-                                        </v:rect>
-                                        <![endif]-->
-                                    </td>
-                                </tr>
-                            </table>
-
-                        </td>
-                    </tr>
-                </table>
-            </body>
-            </html>
-            """
+            html_body, attachment_cid = generate_email_html(event, guest['name'], rsvp_link)
             
             msg = Message(
                 subject=f"Invitation to {event.title}",
@@ -374,6 +380,345 @@ def delete_event(event_id):
     db.session.delete(event)
     db.session.commit()
     return jsonify({"message": "Event deleted successfully"}), 200
+
+@api_bp.route('/events/<int:event_id>', methods=['PUT'])
+def update_event(event_id):
+    """Update event details, reset RSVPs and resend if date changed"""
+    event = Event.query.get(event_id)
+    if not event:
+        return jsonify({"error": "Event not found"}), 404
+    
+    data = request.json
+    try:
+        # Store old date for comparison
+        old_date = event.date
+        new_date = datetime.fromisoformat(data['date'])
+        date_changed = old_date != new_date
+        
+        # Update event fields
+        event.title = data['title']
+        event.subtitle = data.get('subtitle')
+        event.type = data['type']
+        event.date = new_date
+        event.location = data['location']
+        event.address = data.get('address')
+        event.latitude = data.get('latitude')
+        event.longitude = data.get('longitude')
+        event.background_theme = data.get('background_theme', 'default')
+        event.email_background_url = data.get('email_background_url')
+        
+        # If date changed, reset RSVPs and resend invitations
+        if date_changed:
+            print(f"Date changed from {old_date} to {new_date}, resetting RSVPs and resending invitations")
+            invitations = Invitation.query.filter_by(event_id=event_id).all()
+            
+            for invite in invitations:
+                # Reset status
+                invite.status = 'pending'
+                invite.guests_count = 0
+                
+                # Resend invitation email
+                try:
+                    base_url = os.getenv('BASE_URL', 'http://localhost:3000').rstrip('/')
+                    rsvp_link = f"{base_url}/rsvp/{invite.token}"
+                    
+                    html_body, attachment_cid = generate_email_html(event, invite.name, rsvp_link)
+                    
+                    msg = Message(
+                        subject=f"Updated: Invitation to {event.title}",
+                        recipients=[invite.email],
+                        html=html_body
+                    )
+                    
+                    # Attach background image if needed
+                    if attachment_cid:
+                        try:
+                            file_path = os.path.join('/app/backgrounds', attachment_cid)
+                            with open(file_path, 'rb') as f:
+                                file_data = f.read()
+                                content_type = 'image/jpeg'
+                                if attachment_cid.lower().endswith('.png'):
+                                    content_type = 'image/png'
+                                    
+                                msg.attach(
+                                    filename=attachment_cid,
+                                    content_type=content_type,
+                                    data=file_data,
+                                    disposition='inline',
+                                    headers=[['Content-ID', f'<{attachment_cid}>']]
+                                )
+                        except Exception as e:
+                            print(f"ERROR: Failed to attach file {attachment_cid}: {e}")
+                    
+                    mail.send(msg)
+                    print(f"Resent invitation to {invite.email}")
+                except Exception as e:
+                    print(f"Failed to resend email to {invite.email}: {e}")
+        
+        db.session.commit()
+        return jsonify({
+            "message": "Event updated successfully",
+            "date_changed": date_changed,
+            "invitations_resent": len(invitations) if date_changed else 0,
+            "event": event.to_dict()
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 400
+
+@api_bp.route('/events/<int:event_id>/remind', methods=['POST'])
+def send_reminders(event_id):
+    """Send reminder emails to pending guests"""
+    event = Event.query.get(event_id)
+    if not event:
+        return jsonify({"error": "Event not found"}), 404
+    
+    # Get all pending invitations
+    pending_invites = Invitation.query.filter_by(
+        event_id=event_id,
+        status='pending'
+    ).all()
+    
+    if not pending_invites:
+        return jsonify({"message": "No pending invitations to remind"}), 200
+    
+    sent_count = 0
+    base_url = os.getenv('BASE_URL', 'http://localhost:3000').rstrip('/')
+    
+    for invite in pending_invites:
+        try:
+            rsvp_link = f"{base_url}/rsvp/{invite.token}"
+            html_body, attachment_cid = generate_email_html(event, invite.name, rsvp_link)
+            
+            msg = Message(
+                subject=f"Reminder: RSVP for {event.title}",
+                recipients=[invite.email],
+                html=html_body
+            )
+            
+            # Attach background image if needed
+            if attachment_cid:
+                try:
+                    file_path = os.path.join('/app/backgrounds', attachment_cid)
+                    with open(file_path, 'rb') as f:
+                        file_data = f.read()
+                        content_type = 'image/jpeg'
+                        if attachment_cid.lower().endswith('.png'):
+                            content_type = 'image/png'
+                            
+                        msg.attach(
+                            filename=attachment_cid,
+                            content_type=content_type,
+                            data=file_data,
+                            disposition='inline',
+                            headers=[['Content-ID', f'<{attachment_cid}>']]
+                        )
+                except Exception as e:
+                    print(f"ERROR: Failed to attach file {attachment_cid}: {e}")
+            
+            mail.send(msg)
+            print(f"Reminder sent to {invite.email}")
+            sent_count += 1
+        except Exception as e:
+            print(f"Failed to send reminder to {invite.email}: {e}")
+    
+    return jsonify({
+        "message": f"Sent {sent_count} reminders",
+        "sent_count": sent_count
+    }), 200
+
+@api_bp.route('/events/<int:event_id>/preview', methods=['GET'])
+def get_email_preview(event_id):
+    """Generate HTML preview of invitation email"""
+    event = Event.query.get(event_id)
+    if not event:
+        return jsonify({"error": "Event not found"}), 404
+    
+    # For preview, we need to convert the background URL to an HTTP URL
+    # because CID references don't work in iframes
+    bg_url = event.email_background_url
+    
+    if bg_url and not bg_url.startswith('http'):
+        # It's a local filename, convert to HTTP URL
+        base_url = os.getenv('BASE_URL', 'http://localhost:3000').rstrip('/')
+        bg_url = f"{base_url}/api/backgrounds/{bg_url}"
+    elif not bg_url:
+        # Fallback to a default Unsplash image
+        bg_url = 'https://images.unsplash.com/photo-1519751138087-5bf79df62d58?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80'
+    
+    # Create a modified event object for preview with HTTP URL
+    event_preview = type('obj', (object,), {
+        'type': event.type,
+        'title': event.title,
+        'subtitle': event.subtitle,
+        'date': event.date,
+        'location': event.location,
+        'latitude': event.latitude,
+        'longitude': event.longitude,
+        'email_background_url': bg_url  # Use HTTP URL instead
+    })()
+    
+    # Generate preview with placeholder
+    base_url = os.getenv('BASE_URL', 'http://localhost:3000').rstrip('/')
+    sample_rsvp_link = f"{base_url}/rsvp/preview"
+    
+    # Generate HTML using the modified event with HTTP URL
+    # We need to generate the HTML directly here to avoid CID attachment logic
+    html_body = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {{ margin: 0; padding: 0; width: 100% !important; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; background-color: transparent; }}
+            img {{ border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic; }}
+            .btn-primary {{ 
+                background-color: #007bff; 
+                color: #ffffff; 
+                padding: 14px 28px; 
+                text-decoration: none; 
+                border-radius: 50px; 
+                font-weight: bold; 
+                display: inline-block;
+                mso-padding-alt: 0;
+                text-underline-color: #007bff;
+            }}
+            .btn-nav {{
+                background-color: #ffffff;
+                color: #007bff;
+                border: 1px solid #007bff;
+                padding: 8px 16px;
+                text-decoration: none;
+                border-radius: 50px;
+                font-size: 14px;
+                display: inline-block;
+                margin: 0 5px;
+            }}
+        </style>
+    </head>
+    <body style="margin: 0; padding: 0; background-color: transparent;">
+        <!-- Main Table Container (Full Width Gray Background) -->
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" height="100%" style="min-height: 100vh; background-color: transparent;">
+            <tr>
+                <td align="center" valign="top" style="padding: 40px 0;">
+                    
+                    <!-- Phone Container (Centered, Fixed Width) -->
+                    <!-- Using max-width 500px to match mobile preview -->
+                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 500px; width: 100%; margin: 0 auto; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.2);">
+                        <tr>
+                            <td align="center" valign="middle" background="{bg_url}" style="padding: 0; background-image: url('{bg_url}'); background-size: cover; background-position: center; background-repeat: no-repeat; background-color: #e6f7ff; height: 640px;">
+                                <!--[if gte mso 9]>
+                                <v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="width:500px;height:640px;">
+                                <v:fill type="frame" src="{bg_url}" color="#e6f7ff" />
+                                <v:textbox inset="0,0,0,0">
+                                <![endif]-->
+                                
+                                <!-- Content Wrapper (to center the card vertically if needed, or just padding) -->
+                                <div style="padding: 20px;">
+                                    <!-- Card Container -->
+                                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: rgba(255, 255, 255, 0.95); border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); backdrop-filter: blur(10px);">
+                                        <tr>
+                                            <td align="center" style="padding: 30px 20px;">
+                                                
+                                                <!-- Event Type -->
+                                                <div style="text-transform: uppercase; letter-spacing: 2px; font-size: 12px; color: #666; margin-bottom: 10px; font-weight: bold; font-family: Helvetica, Arial, sans-serif;">
+                                                    {event.type.upper()}
+                                                </div>
+
+                                                <!-- Event Title -->
+                                                <h1 style="margin: 10px 0; font-size: 28px; font-weight: 700; color: #1a1a1a; line-height: 1.2; font-family: Helvetica, Arial, sans-serif;">
+                                                    {event.title}
+                                                </h1>
+
+                                                <!-- Subtitle -->
+                                                {f'<div style="font-size: 18px; color: #4a4a4a; margin-bottom: 20px; font-family: Georgia, serif; font-style: italic;">{event.subtitle}</div>' if event.subtitle else ''}
+
+                                                <!-- Details -->
+                                                <table border="0" cellpadding="0" cellspacing="0" style="margin: 20px auto; text-align: left;">
+                                                    <tr>
+                                                        <td style="padding: 5px 0; font-size: 14px; color: #333; font-family: Helvetica, Arial, sans-serif;">
+                                                            <span style="margin-right: 8px; font-size: 16px;">📅</span>
+                                                            {event.date.strftime('%A, %B %d, %Y')} at {event.date.strftime('%I:%M %p')}
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="padding: 5px 0; font-size: 14px; color: #333; font-family: Helvetica, Arial, sans-serif;">
+                                                            <span style="margin-right: 8px; font-size: 16px;">📍</span>
+                                                            {event.location}
+                                                        </td>
+                                                    </tr>
+                                                </table>
+
+                                                <!-- RSVP Button -->
+                                                <div style="margin-top: 20px; margin-bottom: 20px;">
+                                                    <!--[if mso]>
+                                                    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{sample_rsvp_link}" style="height:40px;v-text-anchor:middle;width:160px;" arcsize="50%" stroke="f" fillcolor="#007bff">
+                                                    <w:anchorlock/>
+                                                    <center>
+                                                    <![endif]-->
+                                                        <a href="{sample_rsvp_link}" class="btn-primary" style="color: #ffffff; font-family: Helvetica, Arial, sans-serif; padding: 10px 24px; font-size: 14px;">RSVP Now</a>
+                                                    <!--[if mso]>
+                                                    </center>
+                                                    </v:roundrect>
+                                                    <![endif]-->
+                                                </div>
+
+                                                <!-- Navigation Buttons -->
+                                                {f'''
+                                                <table border="0" cellpadding="0" cellspacing="0" style="margin: 15px auto 0 auto;">
+                                                    <tr>
+                                                        <td style="padding: 0 5px;">
+                                                            <!--[if mso]>
+                                                            <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="https://waze.com/ul?ll={event.latitude},{event.longitude}&navigate=yes" style="height:32px;v-text-anchor:middle;width:100px;" arcsize="50%" strokecolor="#007bff" fillcolor="#ffffff">
+                                                            <w:anchorlock/>
+                                                            <center style="color:#007bff;font-family:Helvetica, Arial,sans-serif;font-size:12px;font-weight:bold;">Waze</center>
+                                                            </v:roundrect>
+                                                            <![endif]-->
+                                                            <a href="https://waze.com/ul?ll={event.latitude},{event.longitude}&navigate=yes" style="background-color: #ffffff; color: #007bff; border: 1px solid #007bff; padding: 8px 20px; text-decoration: none; border-radius: 50px; font-size: 12px; font-weight: bold; display: inline-block; font-family: Helvetica, Arial, sans-serif; mso-hide:all;">🚗 Waze</a>
+                                                        </td>
+                                                        <td style="padding: 0 5px;">
+                                                            <!--[if mso]>
+                                                            <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="https://www.google.com/maps/search/?api=1&query={event.latitude},{event.longitude}" style="height:32px;v-text-anchor:middle;width:100px;" arcsize="50%" strokecolor="#007bff" fillcolor="#ffffff">
+                                                            <w:anchorlock/>
+                                                            <center style="color:#007bff;font-family:Helvetica, Arial,sans-serif;font-size:12px;font-weight:bold;">Maps</center>
+                                                            </v:roundrect>
+                                                            <![endif]-->
+                                                            <a href="https://www.google.com/maps/search/?api=1&query={event.latitude},{event.longitude}" style="background-color: #ffffff; color: #007bff; border: 1px solid #007bff; padding: 8px 20px; text-decoration: none; border-radius: 50px; font-size: 12px; font-weight: bold; display: inline-block; font-family: Helvetica, Arial, sans-serif; mso-hide:all;">🗺️ Maps</a>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                                ''' if event.latitude and event.longitude else ''}
+
+                                                <!-- Footer -->
+                                                <div style="margin-top: 20px; font-size: 10px; color: #888; border-top: 1px solid #eee; padding-top: 15px; font-family: Helvetica, Arial, sans-serif;">
+                                                    <p style="margin: 3px 0;">Hello Guest Name, we can't wait to see you!</p>
+                                                    <p style="margin: 3px 0;">If the button doesn't work: <br><a href="{sample_rsvp_link}" style="color: #007bff; text-decoration: none;">Link</a></p>
+                                                </div>
+
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+
+                                <!--[if gte mso 9]>
+                                </v:textbox>
+                                </v:rect>
+                                <![endif]-->
+                            </td>
+                        </tr>
+                    </table>
+
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>
+    """
+    
+    return html_body, 200, {'Content-Type': 'text/html; charset=utf-8'}
+
+
 
 @api_bp.route('/events/<int:event_id>/rsvps', methods=['GET'])
 def get_event_rsvps(event_id):

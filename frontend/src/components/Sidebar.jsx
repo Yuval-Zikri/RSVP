@@ -20,7 +20,7 @@ const Sidebar = () => {
     return (
         <div className={`sidebar ${language === 'he' ? 'rtl' : 'ltr'}`}>
             <div className="sidebar-header">
-                <h2>{language === 'en' ? 'EventMgr' : 'ניהול אירועים'}</h2>
+                <h2>{language === 'en' ? 'Event Manager' : 'ניהול אירועים'}</h2>
             </div>
 
             <nav className="sidebar-nav">
