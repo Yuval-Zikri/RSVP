@@ -1,4 +1,5 @@
-/* Dashboard specific layout */
+/* Dashboard Layout Styles */
+
 .dashboard-container {
     display: grid;
     grid-template-columns: 300px 1fr;
@@ -6,7 +7,6 @@
     margin-top: 20px;
 }
 
-/* Event List Items */
 .event-item {
     display: flex;
     justify-content: space-between;
@@ -35,24 +35,9 @@
     gap: 8px;
 }
 
-/* Statistics Grid */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
     gap: 15px;
     margin-bottom: 20px;
-}
-
-.stat-box {
-    background-color: var(--input-bg);
-    padding: 15px;
-    border-radius: 8px;
-    text-align: center;
-}
-
-.stat-value {
-    display: block;
-    font-size: 24px;
-    font-weight: bold;
-    color: var(--primary-color);
 }

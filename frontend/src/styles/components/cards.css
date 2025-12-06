@@ -1,0 +1,78 @@
+/* Card Styles */
+
+.card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Event Type Card */
+.event-type-card {
+    padding: 1.5rem 1rem;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    background-color: var(--card-bg);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-height: 80px;
+    justify-content: center;
+}
+
+.event-type-card:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-4px);
+    box-shadow: 0 6px 20px rgba(13, 110, 253, 0.15);
+}
+
+.event-type-card.selected {
+    border-color: var(--primary-color);
+    background: linear-gradient(135deg, var(--primary-color) 0%, #0056b3 100%);
+    color: white;
+    box-shadow: 0 8px 24px rgba(13, 110, 253, 0.3);
+}
+
+.event-type-name-primary {
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+.event-type-name-secondary {
+    font-size: 0.85rem;
+    opacity: 0.7;
+    font-weight: 400;
+}
+
+.event-type-card.selected .event-type-name-primary,
+.event-type-card.selected .event-type-name-secondary {
+    opacity: 1;
+}
+
+/* Statistics Box */
+.stat-box {
+    background-color: var(--input-bg);
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.stat-value {
+    display: block;
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.stat-label {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.9rem;
+    color: var(--text-color);
+    opacity: 0.8;
+}

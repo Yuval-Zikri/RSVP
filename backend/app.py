@@ -13,21 +13,13 @@ from extensions import db, mail, migrate
 # Initialize Extensions
 # db and mail are imported from extensions.py
 
+from config import Config
+
 def create_app():
     app = Flask(__name__)
     
     # Configuration
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///local_dev.db')
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///local_dev.db')
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-    # Mail Configuration
-    app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.mailtrap.io')
-    app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 2525))
-    app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True') == 'True'
-    app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
-    app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
-    app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'noreply@eventmanager.com')
+    app.config.from_object(Config)
     
     # Initialize Plugins
     CORS(app)
@@ -40,14 +32,32 @@ def create_app():
         '/metrics': make_wsgi_app()
     })
     
+    
     # Register Blueprints
-    from routes import api_bp
-    app.register_blueprint(api_bp, url_prefix='/api')
+    from routes.events import events_bp
+    from routes.invitations import invitations_bp
+    from routes.rsvp import rsvp_bp
+    from routes.locations import locations_bp
+    
+    app.register_blueprint(events_bp)
+    app.register_blueprint(invitations_bp)
+    app.register_blueprint(rsvp_bp)
+    app.register_blueprint(locations_bp)
     
     # Health Check
     @app.route('/health')
     def health():
         return jsonify({"status": "healthy"}), 200
+
+    @app.shell_context_processor
+    def make_shell_context():
+        """Make database and models available in flask shell"""
+        from models import Event, Invitation
+        return {
+            'db': db,
+            'Event': Event,
+            'Invitation': Invitation
+        }
         
     return app
 

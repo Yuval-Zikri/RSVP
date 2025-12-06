@@ -4,7 +4,7 @@
 set -e
 
 # Wait for database to be ready using Python script
-python wait_for_db.py
+python scripts/wait_for_db.py
 
 echo "PostgreSQL is up - executing migrations"
 
@@ -12,7 +12,7 @@ echo "PostgreSQL is up - executing migrations"
 if [ ! -d "./migrations" ]; then
     echo "Creating migrations folder..."
     echo "Clearing old migration history from database..."
-    python reset_migrations.py || echo "Note: Could not clear migration history (table may not exist)"
+    python scripts/reset_migrations.py || echo "Note: Could not clear migration history (table may not exist)"
     flask db init
 fi
 
@@ -26,7 +26,7 @@ set -e
 
 if [ $EXIT_CODE -ne 0 ]; then
     echo "Migration failed. Attempting to reset database migrations..."
-    python reset_migrations.py
+    python scripts/reset_migrations.py
     rm -rf migrations
     flask db init
     flask db migrate -m "Auto migration after reset"

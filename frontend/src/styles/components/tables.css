@@ -1,0 +1,44 @@
+/* Table Styles */
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+.rsvp-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.rsvp-table th,
+.rsvp-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Hebrew (RTL) support */
+[dir="rtl"] .rsvp-table th,
+[dir="rtl"] .rsvp-table td {
+    text-align: right;
+}
+
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.85em;
+}
+
+.status-badge.attending {
+    background-color: #d1e7dd;
+    color: #0f5132;
+}
+
+.status-badge.pending {
+    background-color: #fff3cd;
+    color: #664d03;
+}
+
+.status-badge.not_attending {
+    background-color: #f8d7da;
+    color: #842029;
+}
