@@ -133,7 +133,7 @@ event-manager/
     ```
 
 4.  **Access the App:**
-    *   Frontend: [http://localhost:5173](http://localhost:5173)
+    *   Frontend: [http://localhost:3000](http://localhost:3000)
     *   Backend API: [http://localhost:5000](http://localhost:5000)
 
 ---
