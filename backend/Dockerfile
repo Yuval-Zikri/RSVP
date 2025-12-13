@@ -8,7 +8,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Make entrypoint executable
-RUN chmod +x scripts/entrypoint.sh
+# Fix line endings for Windows and make entrypoint executable
+RUN sed -i 's/\r$//' scripts/entrypoint.sh && chmod +x scripts/entrypoint.sh
 
 EXPOSE 5000
 
