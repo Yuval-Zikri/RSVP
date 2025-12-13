@@ -1,0 +1,19 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgres-cluster
+  namespace: event-manager
+spec:
+  instances: 3
+
+  # Basic storage configuration
+  storage:
+    size: 1Gi
+
+  # Bootstrap configuration (initial database creation)
+  bootstrap:
+    initdb:
+      database: event_db
+      owner: user
+
+  # Monitoring/Health checks are automatic in CNPG

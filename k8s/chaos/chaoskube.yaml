@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chaoskube
+  namespace: event-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chaoskube
+  template:
+    metadata:
+      labels:
+        app: chaoskube
+    spec:
+      serviceAccountName: chaoskube
+      containers:
+        - name: chaoskube
+          image: ghcr.io/linki/chaoskube:v0.37.1
+          args:
+            - --interval=2m
+            - --namespaces=event-manager
+            - --labels=app!=chaoskube
+            - --no-dry-run
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: chaoskube
+  namespace: event-manager
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: chaoskube-terminator
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["list", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: chaoskube-terminator
+subjects:
+  - kind: ServiceAccount
+    name: chaoskube
+    namespace: event-manager
+roleRef:
+  kind: ClusterRole
+  name: chaoskube-terminator
+  apiGroup: rbac.authorization.k8s.io
