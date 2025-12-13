@@ -43,6 +43,9 @@ A modern, full-stack application for managing events, invitations, and RSVPs. Bu
 
 ### DevOps & Tools
 *   ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white) **Docker Compose**
+*   **Kubernetes** (Orchestration)
+*   **CloudNativePG** (High Availability Database Operator)
+*   **Chaoskube** (Resilience Testing)
 *   **Ngrok** for external tunneling (optional)
 *   **Prometheus** for metrics
 
