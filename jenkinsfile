@@ -26,7 +26,8 @@ pipeline {
             steps {
                 dir("${WORK_SPACE}") {
                     sh "docker --version"
-                    sh "docker-compose -f ${DOCKER_COMPOSE_FILE} up -d --build"
+                    sh "docker compose -f ${DOCKER_COMPOSE_FILE} up -d --build"
+
                 }
             }
         }
