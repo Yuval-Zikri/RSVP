@@ -22,6 +22,18 @@ pipeline {
             }
         }
 
+        stage('Prepare .env') {
+            steps {
+                sh '''
+                mkdir -p backend
+                cat <<EOF > backend/.env
+                BASE_URL=https://semisentimentally-geyseral-cliff.ngrok-free.dev
+                DATABASE_URL=postgresql://user:password@postgres:5432/event_db
+                EOF
+                '''
+            }
+        }
+
         stage('Docker Compose Up') {
             steps {
                 sh "docker --version"
