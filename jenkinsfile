@@ -6,20 +6,26 @@ pipeline {
         WORK_SPACE = 'RSVP'
         DOCKER_IMAGE = 'rsvp'
         DOCKER_TAG = "v.${BUILD_NUMBER}"
+        DOCKER_COMPOSE_FILE = "docker-compose.yaml"
     }
 
     stages {
-        stage('Checkout') {
+        stage('Cleanup Workspace') {
             steps {
-                sh "rm -rf ${WORK_SPACE}"
-                sh "git clone ${GIT_REPO} ${WORK_SPACE}"
+                deleteDir()
+            }
+        }
+
+        stage('Checkout Latest Code') {
+            steps {
+                checkout scm
             }
         }
 
         stage('Docker Compose Up') {
             steps {
                 dir("${WORK_SPACE}") {
-                    sh "docker compose -f docker-compose.yaml up -d --build"
+                    sh "docker compose -f ${DOCKER_COMPOSE_FILE} up -d --build"
                 }
             }
         }
