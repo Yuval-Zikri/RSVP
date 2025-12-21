@@ -1,0 +1,27 @@
+pipeline {
+    agent any
+
+    environment {
+        GIT_REPO = 'https://github.com/Yuval-Zikri/RSVP.git'
+        WORK_SPACE = 'RSVP'
+        DOCKER_IMAGE = 'rsvp'
+        DOCKER_TAG = "v.${BUILD_NUMBER}"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                sh "rm -rf ${WORK_SPACE}"
+                sh "git clone ${GIT_REPO} ${WORK_SPACE}"
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                dir("${WORK_SPACE}") {
+                    sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
+                }
+            }
+        }
+    }
+}
