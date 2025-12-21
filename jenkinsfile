@@ -16,10 +16,10 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Docker Compose Up') {
             steps {
                 dir("${WORK_SPACE}") {
-                    sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
+                    sh "docker compose -f docker-compose.yaml up -d --build"
                 }
             }
         }
