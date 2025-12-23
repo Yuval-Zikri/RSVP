@@ -4,6 +4,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install --legacy-peer-deps
 COPY . .
+RUN chmod -R +x node_modules/.bin
 RUN npm run build
 
 # Production Stage
