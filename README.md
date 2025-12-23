@@ -214,3 +214,53 @@ The system includes **Chaoskube** to continuously test resilience.
     ```bash
     kubectl get pods -n event-manager -w
     ```
+
+---
+
+## 🛠️ Jenkins & Docker Integration (Windows Host)
+
+This guide explains how to set up Jenkins inside Docker on a Windows host and allow it to run Docker commands (Docker-out-of-Docker) with full permissions.
+
+### 1. Run Jenkins Container
+To allow Jenkins to communicate with the Docker engine on your Windows host, you must mount the Docker socket and run the container as root.
+
+Run this command in your terminal:
+
+```bash
+docker run -d \
+  -p 8080:8080 -p 50000:50000 \
+  --name jenkins \
+  --user root \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v jenkins_home:/var/jenkins_home \
+  jenkins/jenkins:lts
+```
+
+### 2. Fix Docker Socket Permissions
+Inside the Jenkins container, you need to ensure the socket is accessible. Even though we run as root, sometimes the socket permissions on the virtual bridge need a nudge:
+
+1. Enter the container:
+   ```bash
+   docker exec -it jenkins bash
+   ```
+
+2. Run:
+   ```bash
+   chmod 666 /var/run/docker.sock
+   ```
+
+### 3. Install Docker Compose inside Jenkins
+The standard Jenkins image doesn't include the Docker Compose plugin. Install it manually:
+
+```bash
+# Inside the Jenkins container (as root)
+mkdir -p /usr/local/lib/docker/cli-plugins/
+curl -SL https://github.com/docker/compose/releases/download/v2.24.1/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose
+chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+```
+
+Verify with:
+```bash
+docker compose version
+```
+
