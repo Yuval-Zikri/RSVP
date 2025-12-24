@@ -244,25 +244,21 @@ We need to install the Docker CLI inside the Jenkins container and fix the socke
    docker exec -it -u root jenkins bash
    ```
 
-2. Download the installation script:
+2. Update package list:
    ```bash
-   curl https://get.docker.com/ > dockerinstall
+   apt-get update
    ```
 
-3. Give execution permissions to the script:
+3. Install Docker:
    ```bash
-   chmod 777 dockerinstall
+   apt-get install -y docker.io
    ```
 
-4. Run the installation script:
-   ```bash
-   ./dockerinstall
-   ```
-
-5. Fix permissions for the docker socket:
+4. Fix permissions for the docker socket:
    ```bash
    chmod 666 /var/run/docker.sock
    ```
+
 
 ### 3. Install Docker Compose inside Jenkins
 The standard Jenkins image doesn't include the Docker Compose plugin. Install it manually:
