@@ -9,6 +9,10 @@ BASE_URL = "http://localhost:5000"
 
 # 1secmail API Configuration
 ONESECMAIL_API = "https://www.1secmail.com/api/v1/"
+# Fake User-Agent to avoid 403 Forbidden
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+}
 
 def wait_for_service(url, name, retries=30, delay=2):
     print(f"Waiting for {name} at {url}...")
@@ -36,7 +40,7 @@ def test_health():
 def get_temp_email():
     """Generate a random temporary email using 1secmail"""
     try:
-        resp = requests.get(f"{ONESECMAIL_API}?action=genRandomMailbox&count=1")
+        resp = requests.get(f"{ONESECMAIL_API}?action=genRandomMailbox&count=1", headers=HEADERS)
         if resp.status_code == 200:
             email = resp.json()[0]
             print(f"Generated temporary email: {email}")
@@ -59,7 +63,7 @@ def verify_email_received(email_address, retries=30, delay=5):
     for i in range(retries):
         try:
             # Check mailbox
-            resp = requests.get(f"{ONESECMAIL_API}?action=getMessages&login={login}&domain={domain}")
+            resp = requests.get(f"{ONESECMAIL_API}?action=getMessages&login={login}&domain={domain}", headers=HEADERS)
             if resp.status_code == 200:
                 messages = resp.json()
                 if len(messages) > 0:
