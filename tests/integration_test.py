@@ -20,6 +20,8 @@ def wait_for_service(url, name, retries=30, delay=2):
             response = requests.get(url)
             if response.status_code == 200:
                 print(f"{name} is up!")
+                # Wait a bit more for cold boot
+                time.sleep(1) 
                 return True
         except requests.exceptions.RequestException:
             pass
@@ -46,7 +48,12 @@ def get_temp_email():
             print(f"Mail.tm: Failed to get domains: {resp.text}")
             return None
         
-        domain = resp.json()['hydra:member'][0]['domain']
+        domains = resp.json().get('hydra:member')
+        if not domains:
+             print("Mail.tm: No domains available.")
+             return None
+             
+        domain = domains[0]['domain']
         
         # 2. Create Account
         rnd_str = ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
@@ -74,6 +81,7 @@ def get_temp_email():
             return None
             
         token = resp.json()['token']
+        # If there is an ID, grab it too, but mainly we need token
         
         # Store account details
         TEST_ACCOUNT = {
@@ -206,9 +214,69 @@ def test_create_event_and_rsvp():
     data = resp.json()
     if data['invitation']['status'] == 'attending':
         print("RSVP verification passed: Status is 'attending'.")
-        return True
+        return event_id  # Return event_id (Truthy) for further tests
     else:
         print(f"RSVP verification failed: Status is {data['invitation']['status']}")
+        return False
+
+def test_edit_event(event_id):
+    """Test editing an existing event"""
+    print(f"\nTesting Event Edit (ID: {event_id})...")
+    
+    # 1. Update Details
+    update_data = {
+        "title": "Updated Wedding Title",
+        "date": "2023-12-31T20:00:00", # Changed date
+        "type": "wedding",
+        "location": "New Location Hall",
+        "address": "New Address 123",
+        "background_theme": "dark",
+        "guests": [] 
+    }
+    
+    try:
+        resp = requests.put(f"{BASE_URL}/api/events/{event_id}", json=update_data)
+        if resp.status_code == 200:
+            data = resp.json()
+            print("Event updated successfully.")
+            if data['event']['title'] == "Updated Wedding Title":
+                print("Verified: Title updated.")
+            else:
+                 print(f"Error: Title mismatch. Got {data['event']['title']}")
+                 return False
+            
+            if data['date_changed']:
+                print("Verified: System detected date change.")
+            else:
+                print("Warning: System did NOT detect date change.")
+
+            return True
+        else:
+            print(f"Event update failed: {resp.status_code} - {resp.text}")
+            return False
+    except Exception as e:
+        print(f"Exception during event edit: {e}")
+        return False
+
+def test_location_search():
+    """Test Location Search API"""
+    print("\nTesting Location Search...")
+    query = "Tel Aviv"
+    try:
+        resp = requests.get(f"{BASE_URL}/api/locations/search", params={"q": query})
+        if resp.status_code == 200:
+            results = resp.json()
+            print(f"Search for '{query}' returned {len(results)} results.")
+            if len(results) > 0:
+                print(f"First result: {results[0].get('name')}")
+            else:
+                print("Warning: No results found (External API might be blocked?).")
+            return True 
+        else:
+            print(f"Location search failed: {resp.status_code} - {resp.text}")
+            return False
+    except Exception as e:
+        print(f"Exception during location search: {e}")
         return False
 
 def run_tests():
@@ -218,11 +286,20 @@ def run_tests():
     
     if not test_health():
         sys.exit(1)
+    
+    # Run Location Search
+    test_location_search()
         
-    if not test_create_event_and_rsvp():
+    # Create Event and test flow
+    event_id = test_create_event_and_rsvp()
+    if not event_id:
         sys.exit(1)
         
-    print("All integration tests passed!")
+    # Edit Event (using the ID from the created event)
+    if not test_edit_event(event_id):
+        sys.exit(1)
+        
+    print("\nAll integration tests passed!")
 
 if __name__ == "__main__":
     run_tests()

@@ -24,7 +24,10 @@ pipeline {
 
         stage('Prepare .env') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'gmail-auth', usernameVariable: 'MAIL_USER', passwordVariable: 'MAIL_PASS')]) {
+                withCredentials([
+                    usernamePassword(credentialsId: 'gmail-auth', usernameVariable: 'MAIL_USER', passwordVariable: 'MAIL_PASS'),
+                    string(credentialsId: 'ngrok-token', variable: 'NGROK_AUTH_TOKEN')
+                ]) {
                     sh """
                     mkdir -p backend
                     cat <<EOF > backend/.env
@@ -35,6 +38,7 @@ pipeline {
                     MAIL_USE_TLS=True
                     MAIL_USERNAME=${MAIL_USER}
                     MAIL_PASSWORD=${MAIL_PASS}
+                    NGROK_AUTHTOKEN=${NGROK_AUTH_TOKEN}
                     EOF
                     """
                 }
