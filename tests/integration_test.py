@@ -100,8 +100,8 @@ def verify_email_content(account, expected_subject, image_url_check=None):
     
     headers = {"Authorization": f"Bearer {account['token']}"}
     
-    # Increased retries to 25 (~75 seconds) to allow SMTP delays
-    for i in range(25): 
+    # Reduced retries to 10 (~30 seconds) to avoid hanging the build too long if SMTP is slow
+    for i in range(10): 
         try:
             resp = requests.get(f"{MAIL_TM_API}/messages", headers=headers)
             if resp.status_code == 200:
