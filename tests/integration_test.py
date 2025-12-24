@@ -100,7 +100,8 @@ def verify_email_content(account, expected_subject, image_url_check=None):
     
     headers = {"Authorization": f"Bearer {account['token']}"}
     
-    for i in range(15): # Retry for 30-60 seconds roughly
+    # Increased retries to 25 (~75 seconds) to allow SMTP delays
+    for i in range(25): 
         try:
             resp = requests.get(f"{MAIL_TM_API}/messages", headers=headers)
             if resp.status_code == 200:
@@ -179,7 +180,7 @@ def test_full_scenario():
     
     if not guest1 or not guest2:
         print("Skipping email verification due to account creation failure.")
-        return False # Or fallback to fake emails if crucial
+        return False 
         
     guests = [
         {"name": "Guest One", "email": guest1['address']},
@@ -192,7 +193,7 @@ def test_full_scenario():
     if resp.status_code == 201:
         print("Invitations sent successfully.")
         
-        # Verify both received emails (Soft verification - don't fail build on SMTP delays)
+        # Verify both received emails (Soft verification)
         v1 = verify_email_content(guest1, "You're invited", bg_image_url)
         v2 = verify_email_content(guest2, "You're invited", bg_image_url)
         
@@ -200,7 +201,6 @@ def test_full_scenario():
             print("Verified: Both guests received invitations with correct image.")
         else:
             print("WARNING: Email verification timed out (SMTP issue?). Proceeding to RSVP test anyway...")
-            # We continue because we have the tokens from the API response
     else:
         print(f"Invitation send failed: {resp.text}")
         return False
@@ -256,7 +256,7 @@ def test_full_scenario():
         
         for invite in invites:
             token = invite['token']
-            guest_name = invite['guest_name']
+            guest_name = invite['name']  # FIXED: using 'name' instead of 'guest_name'
             
             if "Guest One" in guest_name:
                 print(f"Guest One ({guest_name}) is accepting...")
@@ -282,10 +282,10 @@ def test_full_scenario():
         
         mixed_responses_ok = True
         for invite in final_invites:
-            print(f"- {invite['guest_name']}: {invite['status']}")
-            if "Guest One" in invite['guest_name'] and invite['status'] != 'attending':
+            print(f"- {invite['name']}: {invite['status']}")
+            if "Guest One" in invite['name'] and invite['status'] != 'attending':
                 mixed_responses_ok = False
-            if "Guest Two" in invite['guest_name'] and invite['status'] != 'declined':
+            if "Guest Two" in invite['name'] and invite['status'] != 'declined':
                 mixed_responses_ok = False
                 
         if mixed_responses_ok:
