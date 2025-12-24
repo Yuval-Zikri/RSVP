@@ -263,7 +263,7 @@ def test_full_scenario():
                 status = "attending"
             else:
                 print(f"Guest Two ({guest_name}) is declining...")
-                status = "declined"
+                status = "not_attending"
                 
             rsvp_payload = {
                 "status": status,
@@ -285,7 +285,7 @@ def test_full_scenario():
             print(f"- {invite['name']}: {invite['status']}")
             if "Guest One" in invite['name'] and invite['status'] != 'attending':
                 mixed_responses_ok = False
-            if "Guest Two" in invite['name'] and invite['status'] != 'declined':
+            if "Guest Two" in invite['name'] and invite['status'] != 'not_attending':
                 mixed_responses_ok = False
                 
         if mixed_responses_ok:
