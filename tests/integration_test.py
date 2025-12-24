@@ -263,7 +263,7 @@ def test_location_search():
     print("\nTesting Location Search...")
     query = "Tel Aviv"
     try:
-        resp = requests.get(f"{BASE_URL}/api/locations/search", params={"q": query})
+        resp = requests.get(f"{BASE_URL}/api/search-location", params={"q": query})
         if resp.status_code == 200:
             results = resp.json()
             print(f"Search for '{query}' returned {len(results)} results.")
