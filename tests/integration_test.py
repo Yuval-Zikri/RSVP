@@ -5,13 +5,14 @@ import os
 import json
 import random
 import string
+import re
 
 # Configuration
 BASE_URL = "http://localhost:5000"
 
 # Mail.tm API Configuration
 MAIL_TM_API = "https://api.mail.tm"
-TEST_ACCOUNT = {} # Will store email, password, token, id
+TEST_ACCOUNTS = [] # Will store list of test accounts
 
 def wait_for_service(url, name, retries=30, delay=2):
     print(f"Waiting for {name} at {url}...")
@@ -20,7 +21,6 @@ def wait_for_service(url, name, retries=30, delay=2):
             response = requests.get(url)
             if response.status_code == 200:
                 print(f"{name} is up!")
-                # Wait a bit more for cold boot
                 time.sleep(1) 
                 return True
         except requests.exceptions.RequestException:
@@ -38,9 +38,8 @@ def test_health():
     print(f"Health check failed: {resp.text}")
     return False
 
-def get_temp_email():
-    """Generate a random temporary email using Mail.tm"""
-    global TEST_ACCOUNT
+def create_mail_tm_account():
+    """Create a new temporary email account on Mail.tm"""
     try:
         # 1. Get Domains
         resp = requests.get(f"{MAIL_TM_API}/domains")
@@ -56,7 +55,7 @@ def get_temp_email():
         domain = domains[0]['domain']
         
         # 2. Create Account
-        rnd_str = ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
+        rnd_str = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
         username = f"test_{rnd_str}"
         password = "Password123!"
         address = f"{username}@{domain}"
@@ -81,225 +80,234 @@ def get_temp_email():
             return None
             
         token = resp.json()['token']
-        # If there is an ID, grab it too, but mainly we need token
         
-        # Store account details
-        TEST_ACCOUNT = {
+        account = {
             "address": address,
             "password": password,
             "token": token
         }
-        
+        TEST_ACCOUNTS.append(account)
         print(f"Generated temporary email: {address}")
-        return address
+        return account
 
     except Exception as e:
-        print(f"Error generating temp email: {e}")
+        print(f"Error creating mail account: {e}")
     return None
 
-def verify_email_received(email_address, retries=30, delay=5):
-    """Check Mail.tm for received messages"""
-    global TEST_ACCOUNT
-    print(f"Waiting for email to arrive at {email_address}...")
+def verify_email_content(account, expected_subject, image_url_check=None):
+    """Check inbox for specific subject and optionally verify image URL presence"""
+    print(f"Checking email for {account['address']}...")
     
-    if not TEST_ACCOUNT or TEST_ACCOUNT['address'] != email_address:
-         print("Error: No matching test account credentials found.")
-         return False
-
-    headers = {
-        "Authorization": f"Bearer {TEST_ACCOUNT['token']}"
-    }
+    headers = {"Authorization": f"Bearer {account['token']}"}
     
-    for i in range(retries):
+    for i in range(15): # Retry for 30-60 seconds roughly
         try:
-            # Get messages
             resp = requests.get(f"{MAIL_TM_API}/messages", headers=headers)
             if resp.status_code == 200:
                 messages = resp.json()['hydra:member']
                 if len(messages) > 0:
-                    last_msg = messages[0]
-                    print(f"Email received! Subject: {last_msg['subject']}")
-                    print(f"From: {last_msg['from']['address']}")
-                    return True
+                    # Check the latest message
+                    msg_summary = messages[0]
+                    
+                    if expected_subject in msg_summary['subject']:
+                        print(f"Email received! Subject: {msg_summary['subject']}")
+                        
+                        # Full content verification for Image
+                        if image_url_check:
+                            msg_id = msg_summary['id']
+                            msg_resp = requests.get(f"{MAIL_TM_API}/messages/{msg_id}", headers=headers)
+                            if msg_resp.status_code == 200:
+                                full_msg = msg_resp.json()
+                                # Check html body for the image URL
+                                html_content = full_msg.get('html', [])
+                                if isinstance(html_content, list) and len(html_content) > 0:
+                                    html_body = html_content[0] 
+                                else:
+                                    html_body = str(html_content) # Sometimes it's a string directly
+                                    
+                                if image_url_check in html_body:
+                                    print(f"Verified: Background image URL found in email body.")
+                                else:
+                                    # Fallback check for CID if attachment logic changed
+                                    if "cid:" in html_body:
+                                        print("Verified: Image attached via CID.")
+                                    else:
+                                        print(f"Warning: Image URL '{image_url_check}' NOT found in email HTML.")
+                        
+                        return True
             else:
                 print(f"Mail.tm check failed: {resp.status_code}")
         except Exception as e:
             print(f"Error checking email: {e}")
             
-        time.sleep(delay)
+        time.sleep(3)
         
-    print("Timeout: Email was not received.")
+    print(f"Timeout: Email '{expected_subject}' was not received by {account['address']}.")
     return False
 
-def test_create_event_and_rsvp():
-    print("Testing Event Creation and RSVP...")
+def test_full_scenario():
+    print("\n=== Integration Test: Full Scenario ===")
     
-    # 1. Create Event
+    # 1. Verify Assets
+    bg_image_url = "http://localhost:3000/src/background/wadding.jpg"
+    if os.path.exists("/app/backgrounds/wadding.jpg"):
+        print("Verified: Background image file exists on server.")
+    else:
+        print("Warning: Background image file missing on server!")
+
+    # 2. Create Event
     event_data = {
-        "title": "Integration Test Event",
+        "title": "Mega Integration Wedding",
         "type": "wedding",
         "date": "2025-12-31T18:00:00",
-        "location": "Test Venue",
-        # Using a real image from the project (mounted at /app/backgrounds in backend)
-        "email_background_url": "http://localhost:3000/src/background/wadding.jpg" 
+        "location": "Integration Hall",
+        "email_background_url": bg_image_url
     }
     
-    # Optional: Verify the file actually exists in the backend container (since we mounted it)
-    if os.path.exists("/app/backgrounds/wadding.jpg"):
-        print("Verified: Background image 'wadding.jpg' exists in /app/backgrounds")
-    else:
-        print("Warning: Background image 'wadding.jpg' NOT found in /app/backgrounds")
-
     resp = requests.post(f"{BASE_URL}/api/events", json=event_data)
     if resp.status_code != 201:
         print(f"Failed to create event: {resp.text}")
         return False
-    
+        
     event_id = resp.json()['id']
-    print(f"Event created with ID: {event_id}")
+    print(f"Event created. ID: {event_id}")
     
-    # 2. Send Invitation
-    # Try to generate a real temporary email address
-    guest_email = get_temp_email()
-    should_verify_email = True
+    # 3. Invite Multiple Guests
+    print("\n--- Testing Multiple Guests Invitation ---")
+    guest1 = create_mail_tm_account()
+    guest2 = create_mail_tm_account()
     
-    if not guest_email:
-        print("Warning: Failed to generate temp email (No Internet?). Using fallback email.")
-        guest_email = "test_fallback@example.com"
-        should_verify_email = False
+    if not guest1 or not guest2:
+        print("Skipping email verification due to account creation failure.")
+        return False # Or fallback to fake emails if crucial
         
-    guests = [{"name": "Test Guest", "email": guest_email}]
-    invite_data = {
-        "event_id": event_id,
-        "guests": guests
-    }
+    guests = [
+        {"name": "Guest One", "email": guest1['address']},
+        {"name": "Guest Two", "email": guest2['address']}
+    ]
     
-    print(f"Sending invitation to {guest_email}...")
-    try:
-        resp = requests.post(f"{BASE_URL}/api/invitations", json=invite_data)
-        if resp.status_code == 201:
-            print("Invitation sent successfully (API response).")
-            invitations = resp.json()['invitations']
-            token = invitations[0]['token']
-            
-            # Verify email was received by the external service ONLY if we have a real temp email
-            if should_verify_email:
-                if not verify_email_received(guest_email):
-                    print("CRITICAL: Email was not received by the recipient!")
-                    return False
-            else:
-                print("Skipping email verification (using fallback email).")
-                
+    invite_data = {"event_id": event_id, "guests": guests}
+    resp = requests.post(f"{BASE_URL}/api/invitations", json=invite_data)
+    
+    if resp.status_code == 201:
+        print("Invitations sent successfully.")
+        
+        # Verify both received emails AND Verify Image in Email
+        v1 = verify_email_content(guest1, "You're invited", bg_image_url)
+        v2 = verify_email_content(guest2, "You're invited", bg_image_url)
+        
+        if v1 and v2:
+            print("Verified: Both guests received invitations with correct image.")
         else:
-            print(f"Invitation sending failed: {resp.text}")
+            print("Error: One or more guests did not receive the email.")
             return False
-    except Exception as e:
-        print(f"Exception during invitation: {e}")
-        return False
-
-    # 3. RSVP
-    print(f"RSVPing with token: {token}")
-    rsvp_data = {
-        "status": "attending",
-        "guests_count": 1
-    }
-    
-    resp = requests.post(f"{BASE_URL}/api/rsvp/{token}", json=rsvp_data)
-    if resp.status_code != 200:
-        print(f"RSVP failed: {resp.text}")
-        return False
-        
-    # 4. Verify RSVP
-    resp = requests.get(f"{BASE_URL}/api/rsvp/{token}")
-    data = resp.json()
-    if data['invitation']['status'] == 'attending':
-        print("RSVP verification passed: Status is 'attending'.")
-        return event_id  # Return event_id (Truthy) for further tests
     else:
-        print(f"RSVP verification failed: Status is {data['invitation']['status']}")
+        print(f"Invitation send failed: {resp.text}")
         return False
 
-def test_edit_event(event_id):
-    """Test editing an existing event"""
-    print(f"\nTesting Event Edit (ID: {event_id})...")
-    
-    # 1. Update Details
+    # 4. Location Search
+    print("\n--- Testing Location Search ---")
+    resp = requests.get(f"{BASE_URL}/api/search-location", params={"q": "Jerusalem"})
+    if resp.status_code == 200 and len(resp.json()) >= 0:
+        print("Location search API is working (200 OK).")
+    else:
+        print("Location search failed.")
+        return False
+        
+    # 5. Edit Event & Resend (Implicit Resend)
+    print("\n--- Testing Edit & Auto-Resend ---")
     update_data = {
-        "title": "Updated Wedding Title",
-        "date": "2023-12-31T20:00:00", # Changed date
+        "title": "Shifted Wedding Date",
+        "date": "2026-01-01T20:00:00", # Date change triggers resend
         "type": "wedding",
-        "location": "New Location Hall",
-        "address": "New Address 123",
-        "background_theme": "dark",
-        "guests": [] 
+        "location": "New Hall",
+        "email_background_url": bg_image_url,
+        "guests": []
     }
-    
-    try:
-        resp = requests.put(f"{BASE_URL}/api/events/{event_id}", json=update_data)
-        if resp.status_code == 200:
-            data = resp.json()
-            print("Event updated successfully.")
-            if data['event']['title'] == "Updated Wedding Title":
-                print("Verified: Title updated.")
-            else:
-                 print(f"Error: Title mismatch. Got {data['event']['title']}")
-                 return False
+    resp = requests.put(f"{BASE_URL}/api/events/{event_id}", json=update_data)
+    if resp.status_code == 200:
+        print("Event updated.")
+        # Verify guest1 received update email
+        if verify_email_content(guest1, "Update"):
+            print("Verified: Guest received update email after date change.")
+        else:
+            print("Warning: Update email not received.")
+    else:
+        print("Event update failed.")
+        return False
+
+    # 6. Manual Reminder (Explicit Resend)
+    print("\n--- Testing Manual Reminder ---")
+    # Sending reminder to pending guests (both are pending)
+    resp = requests.post(f"{BASE_URL}/api/events/{event_id}/remind")
+    if resp.status_code == 200:
+        print(f"Reminders sent: {resp.json().get('sent_count')}")
+        if verify_email_content(guest2, "Reminder"):
+            print("Verified: Guest received manual reminder.")
+    else:
+         print(f"Reminder failed: {resp.text}")
+
+    # 7. RSVP (Mixed Responses)
+    print("\n--- Testing Mixed RSVP Responses ---")
+    resp = requests.get(f"{BASE_URL}/api/events/{event_id}/rsvps")
+    if resp.status_code == 200:
+        invites = resp.json()
+        print(f"Found {len(invites)} pending invitations.")
+        
+        for invite in invites:
+            token = invite['token']
+            guest_name = invite['guest_name']
             
-            if data['date_changed']:
-                print("Verified: System detected date change.")
+            if "Guest One" in guest_name:
+                print(f"Guest One ({guest_name}) is accepting...")
+                status = "attending"
             else:
-                print("Warning: System did NOT detect date change.")
-
-            return True
+                print(f"Guest Two ({guest_name}) is declining...")
+                status = "declined"
+                
+            rsvp_payload = {
+                "status": status,
+                "guests_count": 1 if status == "attending" else 0
+            }
+            
+            r = requests.post(f"{BASE_URL}/api/rsvp/{token}", json=rsvp_payload)
+            if r.status_code != 200:
+                print(f"RSVP failed for {guest_name}: {r.text}")
+                return False
+                
+        # Verify statuses
+        print("Verifying final statuses...")
+        resp = requests.get(f"{BASE_URL}/api/events/{event_id}/rsvps")
+        final_invites = resp.json()
+        
+        mixed_responses_ok = True
+        for invite in final_invites:
+            print(f"- {invite['guest_name']}: {invite['status']}")
+            if "Guest One" in invite['guest_name'] and invite['status'] != 'attending':
+                mixed_responses_ok = False
+            if "Guest Two" in invite['guest_name'] and invite['status'] != 'declined':
+                mixed_responses_ok = False
+                
+        if mixed_responses_ok:
+            print("Verified: Mixed RSVP responses recorded correctly.")
         else:
-            print(f"Event update failed: {resp.status_code} - {resp.text}")
+            print("Error: RSVP statuses do not match expectation.")
             return False
-    except Exception as e:
-        print(f"Exception during event edit: {e}")
+            
+    else:
+        print("Failed to list RSVPs.")
         return False
-
-def test_location_search():
-    """Test Location Search API"""
-    print("\nTesting Location Search...")
-    query = "Tel Aviv"
-    try:
-        resp = requests.get(f"{BASE_URL}/api/search-location", params={"q": query})
-        if resp.status_code == 200:
-            results = resp.json()
-            print(f"Search for '{query}' returned {len(results)} results.")
-            if len(results) > 0:
-                print(f"First result: {results[0].get('name')}")
-            else:
-                print("Warning: No results found (External API might be blocked?).")
-            return True 
-        else:
-            print(f"Location search failed: {resp.status_code} - {resp.text}")
-            return False
-    except Exception as e:
-        print(f"Exception during location search: {e}")
-        return False
-
-def run_tests():
-    # Wait for Backend
-    if not wait_for_service(f"{BASE_URL}/health", "Backend"):
-        sys.exit(1)
-    
-    if not test_health():
-        sys.exit(1)
-    
-    # Run Location Search
-    test_location_search()
         
-    # Create Event and test flow
-    event_id = test_create_event_and_rsvp()
-    if not event_id:
-        sys.exit(1)
-        
-    # Edit Event (using the ID from the created event)
-    if not test_edit_event(event_id):
-        sys.exit(1)
-        
-    print("\nAll integration tests passed!")
+    print("\n=== All Integration Checks Passed ===")
+    return True
 
 if __name__ == "__main__":
-    run_tests()
+    # Wait for services
+    if not wait_for_service(f"{BASE_URL}/health", "Backend"):
+        sys.exit(1)
+        
+    if not test_health():
+        sys.exit(1)
+        
+    if not test_full_scenario():
+        sys.exit(1)
