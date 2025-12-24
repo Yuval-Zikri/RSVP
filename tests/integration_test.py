@@ -194,8 +194,8 @@ def test_full_scenario():
         print("Invitations sent successfully.")
         
         # Verify both received emails (Soft verification)
-        v1 = verify_email_content(guest1, "You're invited", bg_image_url)
-        v2 = verify_email_content(guest2, "You're invited", bg_image_url)
+        v1 = verify_email_content(guest1, "Invitation", bg_image_url)
+        v2 = verify_email_content(guest2, "Invitation", bg_image_url)
         
         if v1 and v2:
             print("Verified: Both guests received invitations with correct image.")
