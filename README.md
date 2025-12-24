@@ -236,15 +236,30 @@ docker run -d \
   jenkins/jenkins:lts
 ```
 
-### 2. Fix Docker Socket Permissions
-Inside the Jenkins container, you need to ensure the socket is accessible. Even though we run as root, sometimes the socket permissions on the virtual bridge need a nudge:
+### 2. Install Docker in Jenkins Container & Fix Permissions
+We need to install the Docker CLI inside the Jenkins container and fix the socket permissions so Jenkins can run Docker commands.
 
-1. Enter the container:
+1. Enter the container as root:
    ```bash
-   docker exec -it jenkins bash
+   docker exec -it -u root jenkins bash
    ```
 
-2. Run:
+2. Download the installation script:
+   ```bash
+   curl https://get.docker.com/ > dockerinstall
+   ```
+
+3. Give execution permissions to the script:
+   ```bash
+   chmod 777 dockerinstall
+   ```
+
+4. Run the installation script:
+   ```bash
+   ./dockerinstall
+   ```
+
+5. Fix permissions for the docker socket:
    ```bash
    chmod 666 /var/run/docker.sock
    ```
@@ -264,3 +279,9 @@ Verify with:
 docker compose version
 ```
 
+### 4. Configure Credentials
+1. Go to **Manage Jenkins** > **Credentials**.
+2. Add a new **Username with password** credential.
+3. ID: `gmail-auth`
+4. Username: Your Gmail address
+5. Password: Your Google App Password
