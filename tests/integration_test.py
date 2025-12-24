@@ -3,16 +3,15 @@ import requests
 import sys
 import os
 import json
+import random
+import string
 
 # Configuration
 BASE_URL = "http://localhost:5000"
 
-# 1secmail API Configuration
-ONESECMAIL_API = "https://www.1secmail.com/api/v1/"
-# Fake User-Agent to avoid 403 Forbidden
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-}
+# Mail.tm API Configuration
+MAIL_TM_API = "https://api.mail.tm"
+TEST_ACCOUNT = {} # Will store email, password, token, id
 
 def wait_for_service(url, name, retries=30, delay=2):
     print(f"Waiting for {name} at {url}...")
@@ -38,39 +37,84 @@ def test_health():
     return False
 
 def get_temp_email():
-    """Generate a random temporary email using 1secmail"""
+    """Generate a random temporary email using Mail.tm"""
+    global TEST_ACCOUNT
     try:
-        resp = requests.get(f"{ONESECMAIL_API}?action=genRandomMailbox&count=1", headers=HEADERS)
-        if resp.status_code == 200:
-            email = resp.json()[0]
-            print(f"Generated temporary email: {email}")
-            return email
-        else:
-            print(f"Error generating temp email: Status {resp.status_code} - {resp.text}")
+        # 1. Get Domains
+        resp = requests.get(f"{MAIL_TM_API}/domains")
+        if resp.status_code != 200:
+            print(f"Mail.tm: Failed to get domains: {resp.text}")
+            return None
+        
+        domain = resp.json()['hydra:member'][0]['domain']
+        
+        # 2. Create Account
+        rnd_str = ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
+        username = f"test_{rnd_str}"
+        password = "Password123!"
+        address = f"{username}@{domain}"
+        
+        resp = requests.post(f"{MAIL_TM_API}/accounts", json={
+            "address": address,
+            "password": password
+        })
+        
+        if resp.status_code != 201:
+            print(f"Mail.tm: Failed to create account: {resp.text}")
+            return None
+            
+        # 3. Get JWT Token
+        resp = requests.post(f"{MAIL_TM_API}/token", json={
+            "address": address,
+            "password": password
+        })
+        
+        if resp.status_code != 200:
+            print(f"Mail.tm: Failed to get token: {resp.text}")
+            return None
+            
+        token = resp.json()['token']
+        
+        # Store account details
+        TEST_ACCOUNT = {
+            "address": address,
+            "password": password,
+            "token": token
+        }
+        
+        print(f"Generated temporary email: {address}")
+        return address
+
     except Exception as e:
         print(f"Error generating temp email: {e}")
     return None
 
 def verify_email_received(email_address, retries=30, delay=5):
-    """Check 1secmail for received messages"""
+    """Check Mail.tm for received messages"""
+    global TEST_ACCOUNT
     print(f"Waiting for email to arrive at {email_address}...")
-    try:
-        login, domain = email_address.split('@')
-    except ValueError:
-        print(f"Invalid email address format: {email_address}")
-        return False
+    
+    if not TEST_ACCOUNT or TEST_ACCOUNT['address'] != email_address:
+         print("Error: No matching test account credentials found.")
+         return False
+
+    headers = {
+        "Authorization": f"Bearer {TEST_ACCOUNT['token']}"
+    }
     
     for i in range(retries):
         try:
-            # Check mailbox
-            resp = requests.get(f"{ONESECMAIL_API}?action=getMessages&login={login}&domain={domain}", headers=HEADERS)
+            # Get messages
+            resp = requests.get(f"{MAIL_TM_API}/messages", headers=headers)
             if resp.status_code == 200:
-                messages = resp.json()
+                messages = resp.json()['hydra:member']
                 if len(messages) > 0:
                     last_msg = messages[0]
                     print(f"Email received! Subject: {last_msg['subject']}")
-                    print(f"From: {last_msg['from']}")
+                    print(f"From: {last_msg['from']['address']}")
                     return True
+            else:
+                print(f"Mail.tm check failed: {resp.status_code}")
         except Exception as e:
             print(f"Error checking email: {e}")
             
