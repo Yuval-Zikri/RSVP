@@ -41,6 +41,8 @@ def get_temp_email():
             email = resp.json()[0]
             print(f"Generated temporary email: {email}")
             return email
+        else:
+            print(f"Error generating temp email: Status {resp.status_code} - {resp.text}")
     except Exception as e:
         print(f"Error generating temp email: {e}")
     return None

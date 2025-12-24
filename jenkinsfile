@@ -66,6 +66,10 @@ pipeline {
                         // Note: We assume tests/integration_test.py exists in the workspace
                         sh "docker cp tests/integration_test.py ${backendId}:/app/integration_test.py"
                         
+                        // FIX: Manually copy background image to workaround volume mount issues in Jenkins DnD
+                        sh "docker exec ${backendId} mkdir -p /app/backgrounds"
+                        sh "docker cp frontend/src/background/wadding.jpg ${backendId}:/app/backgrounds/wadding.jpg"
+                        
                         // Run the test script inside the container
                         sh "docker exec ${backendId} python /app/integration_test.py"
                     } else {
