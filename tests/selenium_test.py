@@ -370,8 +370,20 @@ def test_full_ui_flow():
         edit_btn.click()
         print("Edit button clicked")
         
-        # Wait for edit modal/form
-        wait.until(EC.visibility_of_element_located((By.NAME, "title")))
+        # Wait for edit modal to appear
+        print("Waiting for edit modal/form to appear...")
+        time.sleep(1)  # Give the modal time to start appearing
+        
+        try:
+            # Try to wait for the modal container first
+            wait.until(EC.presence_of_element_located((By.CLASS_NAME, "modal-content")))
+            print("Modal appeared")
+        except:
+            print("Modal container not found, trying to find title input directly...")
+        
+        # Wait for title input field to be visible
+        title_input = wait.until(EC.visibility_of_element_located((By.NAME, "title")))
+        print("Title input field found")
         time.sleep(0.5)
         
         # Modify the title
