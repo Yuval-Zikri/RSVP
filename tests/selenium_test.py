@@ -50,15 +50,18 @@ def test_full_ui_flow():
         # STEP 0: Event Type
         print("Step 0: Selecting Event Type...")
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "event-type-card")))
-        # Select Wedding (usually the first one)
-        driver.find_element(By.XPATH, "//h3[contains(text(), 'Wedding') or contains(text(), 'חתונה')]").click()
+        
+        # Select Wedding - updated selector to match div.event-type-name-primary
+        wedding_card = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'event-type-name-primary') and (contains(text(), 'Wedding') or contains(text(), 'חתונה'))]")))
+        wedding_card.click()
         
         next_btn = driver.find_element(By.XPATH, "//button[contains(text(), 'Next') or contains(text(), 'הבא')]")
         next_btn.click()
         
         # STEP 1: Event Details
         print("Step 1: Filling Event Details...")
-        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[placeholder*='Wedding']")))
+        # Wait for the title input which has a placeholder
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[placeholder*='Wedding'], input[placeholder*='חתונה']")))
         
         inputs = driver.find_elements(By.TAG_NAME, "input")
         # Title
@@ -66,13 +69,14 @@ def test_full_ui_flow():
         # Subtitle
         inputs[1].send_keys("Automated Test Runner")
         
-        # Date
+        # Date - Using JS to set value is much more reliable across different locales
+        print("Setting date...")
         date_input = driver.find_element(By.CSS_SELECTOR, "input[type='datetime-local']")
-        date_input.send_keys("25122025") # Format depends on browser locale, but 2025 is safe
-        date_input.send_keys("\t") # Move to time
-        date_input.send_keys("1800")
+        driver.execute_script("arguments[0].value = '2025-12-31T18:00';", date_input)
+        driver.execute_script("arguments[0].dispatchEvent(new Event('change'))", date_input)
         
         # Location
+        print("Setting location...")
         loc_input = driver.find_element(By.CSS_SELECTOR, "input[placeholder*='Location'] , input[placeholder*='מיקום']")
         loc_input.send_keys("Tel Aviv")
         time.sleep(2) # Wait for debounce/search
