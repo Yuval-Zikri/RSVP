@@ -60,21 +60,22 @@ def test_full_ui_flow():
         
         # STEP 1: Event Details
         print("Step 1: Filling Event Details...")
-        # Wait for the form-step container
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "form-step")))
         
-        # Use more specific selectors for Title and Subtitle
+        # 1. Enter Title using direct NAME selector and JS as backup
         print("Entering title...")
-        title_input = wait.until(EC.presence_of_element_located((By.XPATH, "//label[contains(text(), 'Title') or contains(text(), 'שם האירוע')]/following-sibling::input[1]")))
+        title_input = wait.until(EC.presence_of_element_located((By.NAME, "title")))
         title_input.clear()
         title_input.send_keys("Selenium UI Gala")
+        driver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true }));", title_input)
         
+        # 2. Enter Subtitle
         print("Entering subtitle...")
-        subtitle_input = wait.until(EC.presence_of_element_located((By.XPATH, "//label[contains(text(), 'Subtitle') or contains(text(), 'תת כותרת')]/following-sibling::input[1]")))
+        subtitle_input = wait.until(EC.presence_of_element_located((By.NAME, "subtitle")))
         subtitle_input.clear()
         subtitle_input.send_keys("Automated Test Runner")
         
-        # Date - Improved JS injection to trigger React state updates
+        # 3. Setting Date
         print("Setting date...")
         date_input = driver.find_element(By.CSS_SELECTOR, "input[type='datetime-local']")
         driver.execute_script("""
@@ -84,25 +85,29 @@ def test_full_ui_flow():
             el.dispatchEvent(new Event('change', { bubbles: true }));
         """, date_input)
         
-        # Location
+        # 4. Location - This part is critical. We search and must ensure selection happens.
         print("Setting location...")
-        loc_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[placeholder*='place'], input[placeholder*='כתובת'], input[placeholder*='מקום']")))
+        loc_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".location-search-container input")))
         loc_input.clear()
         loc_input.send_keys("Jerusalem")
         
-        # Click search
+        # Click search and wait for results
         search_btn = driver.find_element(By.CSS_SELECTOR, ".location-search-container button.btn-secondary")
         search_btn.click()
         
-        # Wait for and select result
-        print("Waiting for search results...")
+        print("Waiting for search results list...")
+        # Wait for the UL to appear
+        wait.until(EC.presence_of_element_located((By.CLASS_NAME, "search-results-list")))
+        
+        # Find and click the first LI
         first_result = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".search-results-list li")))
+        print(f"Selecting location result: {first_result.text}")
         first_result.click()
-        print("Location selected.")
         
-        time.sleep(2) # Extra wait to ensure React state is updated
+        # Verification: Wait a bit and check if a "Next" button click works
+        time.sleep(2) 
         
-        # Proceed to Next
+        print("Proceeding to Step 2...")
         next_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Next') or contains(text(), 'הבא')]")))
         next_btn.click()
         
