@@ -274,21 +274,23 @@ def test_full_ui_flow():
         driver.get(f"{FRONTEND_URL}/dashboard")
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "event-item")))
         
-        # Wait a bit for the backend to process the RSVP
-        time.sleep(2)
+        # Wait for backend to process
+        time.sleep(3)
         
         # Refresh to get the latest data
         print("Refreshing dashboard to get latest RSVP status...")
         driver.refresh()
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "event-item")))
-        time.sleep(1)
+        time.sleep(2)
         
-        # Re-select event
-        driver.find_element(By.XPATH, "//h4[contains(text(), 'Selenium UI Gala')]").click()
+        # Re-select event - this triggers the Dashboard to fetch RSVPs from backend
+        print("Re-selecting event to trigger RSVP data reload...")
+        event_title = driver.find_element(By.XPATH, "//h4[contains(text(), 'Selenium UI Gala')]")
+        event_title.click()
         
-        # Check guest table
+        # Wait for RSVP table to load with fresh data
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "rsvp-table")))
-        time.sleep(1)  # Extra wait for table to populate
+        time.sleep(2)  # Give time for the API call to complete
         
         status_badge = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "status-badge")))
         badge_class = status_badge.get_attribute("class")
