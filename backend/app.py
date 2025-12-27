@@ -48,6 +48,12 @@ def create_app():
     @app.route('/health')
     def health():
         return jsonify({"status": "healthy"}), 200
+    
+    # Add ngrok-skip-browser-warning header to all responses
+    @app.after_request
+    def add_ngrok_header(response):
+        response.headers['ngrok-skip-browser-warning'] = 'true'
+        return response
 
     @app.shell_context_processor
     def make_shell_context():

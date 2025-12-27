@@ -14,6 +14,10 @@ BASE_URL = "http://localhost:5000"
 MAIL_TM_API = "https://api.mail.tm"
 TEST_ACCOUNTS = [] # Will store list of test accounts
 
+# Create a session with default headers to skip ngrok browser warning
+session = requests.Session()
+session.headers.update({'ngrok-skip-browser-warning': 'true'})
+
 def wait_for_service(url, name, retries=30, delay=2):
     print(f"Waiting for {name} at {url}...")
     for i in range(retries):

@@ -35,10 +35,19 @@ def test_full_ui_flow():
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--window-size=1920,1080")
     
+    # Add header to skip ngrok browser warning
+    chrome_options.add_experimental_option("excludeSwitches", ["enable-logging"])
+    chrome_options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+    
     driver = webdriver.Remote(
         command_executor=SELENIUM_HUB,
         options=chrome_options
     )
+    
+    # Inject ngrok-skip-browser-warning header
+    driver.execute_cdp_cmd('Network.setExtraHTTPHeaders', {
+        'headers': {'ngrok-skip-browser-warning': 'true'}
+    })
     
     wait = WebDriverWait(driver, 15)
     
