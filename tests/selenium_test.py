@@ -386,12 +386,20 @@ def test_full_ui_flow():
         print("Title input field found")
         time.sleep(0.5)
         
-        # Modify the title
+        # Modify the title and the date
         title_edit = driver.find_element(By.NAME, "title")
         title_edit.clear()
         title_edit.send_keys("Selenium UI Gala - EDITED")
         driver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true }));", title_edit)
-        driver.execute_script("arguments[0].dispatchEvent(new Event('change', { bubbles: true }));", title_edit)
+        
+        # Change the date to trigger RSVP reset
+        print("Changing date to trigger RSVP reset...")
+        date_edit = driver.find_element(By.NAME, "date")
+        # Set to next year instead of this year
+        new_date_val = "2026-01-01T20:00"
+        date_edit.send_keys(new_date_val)
+        driver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true }));", date_edit)
+        driver.execute_script("arguments[0].dispatchEvent(new Event('change', { bubbles: true }));", date_edit)
         time.sleep(0.5)
         
         # Save - use a very specific selector for the "Save Changes" button in the modal
