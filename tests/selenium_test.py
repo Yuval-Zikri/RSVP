@@ -185,20 +185,44 @@ def test_full_ui_flow():
         view_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.btn-info")))
         view_btn.click()
         
-        # Switch to iframe
-        wait.until(EC.presence_of_element_located((By.TAG_NAME, "iframe")))
-        iframe = driver.find_element(By.TAG_NAME, "iframe")
-        driver.switch_to.frame(iframe)
+        # Switch to iframe and wait for it to fully load
+        print("Waiting for email preview iframe to load...")
+        iframe_element = wait.until(EC.presence_of_element_located((By.TAG_NAME, "iframe")))
+        driver.switch_to.frame(iframe_element)
         
-        # Extract RSVP URL - look for the button with class btn-primary
-        try:
-            rsvp_anchor = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "a.btn-primary")))
-        except:
-            # Fallback: try to find any link with RSVP in text
-            rsvp_anchor = wait.until(EC.presence_of_element_located((By.XPATH, "//a[contains(text(), 'RSVP') or contains(text(), 'אישור')]")))
+        # Wait 5 seconds for the email content to fully render
+        time.sleep(5)
         
-        rsvp_url = rsvp_anchor.get_attribute("href")
-        print(f"Extracted RSVP URL: {rsvp_url}")
+        # Extract RSVP URL - look for link with actual token (not preview)
+        print("Looking for RSVP link with token...")
+        
+        # Try to find all links and filter for the real RSVP link
+        all_links = driver.find_elements(By.TAG_NAME, "a")
+        rsvp_url = None
+        
+        for link in all_links:
+            href = link.get_attribute("href")
+            if href and "/rsvp/" in href and "preview" not in href:
+                # This should be the real RSVP link with token
+                rsvp_url = href
+                print(f"Found RSVP link with token: {rsvp_url}")
+                break
+        
+        # Fallback: try btn-primary if we couldn't find it
+        if not rsvp_url:
+            print("Fallback: using btn-primary selector...")
+            try:
+                rsvp_anchor = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "a.btn-primary")))
+                rsvp_url = rsvp_anchor.get_attribute("href")
+            except:
+                rsvp_anchor = wait.until(EC.presence_of_element_located((By.XPATH, "//a[contains(text(), 'RSVP')]")))
+                rsvp_url = rsvp_anchor.get_attribute("href")
+        
+        # Validate the URL
+        if not rsvp_url or "preview" in rsvp_url:
+            raise Exception(f"Invalid RSVP URL extracted: {rsvp_url}. Expected URL with token, not preview.")
+        
+        print(f"✓ Extracted valid RSVP URL: {rsvp_url}")
         
         driver.switch_to.default_content()
         
