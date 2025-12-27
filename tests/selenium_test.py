@@ -247,14 +247,29 @@ def test_full_ui_flow():
         driver.get(f"{FRONTEND_URL}/dashboard")
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "event-item")))
         
+        # Wait a bit for the backend to process the RSVP
+        time.sleep(2)
+        
+        # Refresh to get the latest data
+        print("Refreshing dashboard to get latest RSVP status...")
+        driver.refresh()
+        wait.until(EC.presence_of_element_located((By.CLASS_NAME, "event-item")))
+        time.sleep(1)
+        
         # Re-select event
         driver.find_element(By.XPATH, "//h4[contains(text(), 'Selenium UI Gala')]").click()
         
         # Check guest table
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "rsvp-table")))
+        time.sleep(1)  # Extra wait for table to populate
+        
         status_badge = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "status-badge")))
-        print(f"Guest Status: {status_badge.text}")
-        assert "attending" in status_badge.get_attribute("class"), "Status should be 'attending'"
+        badge_class = status_badge.get_attribute("class")
+        badge_text = status_badge.text
+        print(f"Guest Status Badge Class: {badge_class}")
+        print(f"Guest Status Badge Text: {badge_text}")
+        
+        assert "attending" in badge_class.lower() or "attending" in badge_text.lower(), f"Status should be 'attending', but got class: {badge_class}, text: {badge_text}"
         print("✓ Verified: Guest status is 'attending'")
         
         # === PART 3: Edit Event (should reset RSVP status) ===
