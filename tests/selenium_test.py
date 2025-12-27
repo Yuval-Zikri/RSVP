@@ -180,39 +180,43 @@ def test_full_ui_flow():
         # === PART 1: Get RSVP Link and Perform RSVP ===
         print("\n=== PART 1: Testing RSVP Flow ===")
         
-        # Instead of parsing the preview, get the token directly from the API
+        # Get the token directly from the API
         print("Getting RSVP token from API...")
         
-        # Get event ID from URL or from the page
-        current_url = driver.current_url
-        print(f"Current URL: {current_url}")
-        
-        # Get the event's RSVPs from the backend to extract the token
         import requests
-        rsvps_response = requests.get(f"{BACKEND_URL}/api/events/1/rsvps", headers={'ngrok-skip-browser-warning': 'true'})
         
-        # Try different event IDs if needed
-        if rsvps_response.status_code != 200:
-            # Try to find the latest event
-            for event_id in range(1, 20):
-                rsvps_response = requests.get(f"{BACKEND_URL}/api/events/{event_id}/rsvps", headers={'ngrok-skip-browser-warning': 'true'})
-                if rsvps_response.status_code == 200 and len(rsvps_response.json()) > 0:
-                    print(f"Found event with RSVPs: Event ID {event_id}")
-                    break
+        # Try to find the latest event with invitations by searching backwards
+        rsvps = []
+        found_event_id = None
         
-        if rsvps_response.status_code == 200:
-            rsvps = rsvps_response.json()
-            if rsvps and len(rsvps) > 0:
-                # Get the first guest's token
-                first_guest = rsvps[0]
-                token = first_guest['token']
-                rsvp_url = f"{FRONTEND_URL}/rsvp/{token}"
-                print(f"✓ Extracted RSVP token: {token}")
-                print(f"✓ RSVP URL: {rsvp_url}")
-            else:
-                raise Exception("No RSVPs found in the event")
-        else:
-            raise Exception(f"Failed to get RSVPs from API: {rsvps_response.status_code}")
+        # Start from a higher ID and work backwards to find the most recent event
+        for event_id in range(100, 0, -1):
+            try:
+                rsvps_response = requests.get(
+                    f"{BACKEND_URL}/api/events/{event_id}/rsvps", 
+                    headers={'ngrok-skip-browser-warning': 'true'},
+                    timeout=2
+                )
+                if rsvps_response.status_code == 200:
+                    rsvps_data = rsvps_response.json()
+                    if rsvps_data and len(rsvps_data) > 0:
+                        # Found an event with invitations
+                        rsvps = rsvps_data
+                        found_event_id = event_id
+                        print(f"✓ Found event ID {event_id} with {len(rsvps)} invitation(s)")
+                        break
+            except:
+                continue
+        
+        if not rsvps or not found_event_id:
+            raise Exception("Could not find any event with invitations. The event might not have been created properly.")
+        
+        # Get the first guest's token
+        first_guest = rsvps[0]
+        token = first_guest['token']
+        rsvp_url = f"{FRONTEND_URL}/rsvp/{token}"
+        print(f"✓ Using invitation token: {token}")
+        print(f"✓ RSVP URL: {rsvp_url}")
         
         # Navigate to RSVP page
         print(f"Navigating to RSVP page...")
