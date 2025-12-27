@@ -68,6 +68,7 @@ def test_full_ui_flow():
         title_input.clear()
         title_input.send_keys("Selenium UI Gala")
         driver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true }));", title_input)
+        driver.execute_script("arguments[0].dispatchEvent(new Event('change', { bubbles: true }));", title_input)
         
         # 2. Enter Subtitle
         print("Entering subtitle...")
@@ -78,13 +79,17 @@ def test_full_ui_flow():
         
         # 3. Setting Date
         print("Setting date...")
-        date_input = driver.find_element(By.NAME, "date")
+        date_input = wait.until(EC.visibility_of_element_located((By.NAME, "date")))
+        # Focus first to ensure React is listening
+        date_input.click()
         driver.execute_script("""
             var el = arguments[0];
             el.value = '2025-12-31T18:00';
             el.dispatchEvent(new Event('input', { bubbles: true }));
             el.dispatchEvent(new Event('change', { bubbles: true }));
+            el.dispatchEvent(new Event('blur', { bubbles: true }));
         """, date_input)
+        time.sleep(0.5)  # Small delay for React to process
         
         # 4. Location
         print("Setting location...")
