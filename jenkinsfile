@@ -67,7 +67,6 @@ pipeline {
                         echo "Backend Container ID: ${backendId}"
                         
                         // Copy test script to container
-                        // Note: We assume tests/integration_test.py exists in the workspace
                         sh "docker cp tests/integration_test.py ${backendId}:/app/integration_test.py"
                         
                         // FIX: Manually copy background image to workaround volume mount issues in Jenkins DnD
@@ -78,6 +77,26 @@ pipeline {
                         sh "docker exec ${backendId} python /app/integration_test.py"
                     } else {
                         error "Backend container not found!"
+                    }
+                }
+            }
+        }
+
+        stage('UI Tests (Selenium)') {
+            steps {
+                script {
+                    def backendId = sh(script: "docker compose -f ${DOCKER_COMPOSE_FILE} ps -q backend", returnStdout: true).trim()
+                    
+                    if (backendId) {
+                        echo "Running Selenium UI Tests..."
+                        
+                        // Copy selenium test script to container
+                        sh "docker cp tests/selenium_test.py ${backendId}:/app/selenium_test.py"
+                        
+                        // Run the selenium test script inside the container
+                        sh "docker exec ${backendId} python /app/selenium_test.py"
+                    } else {
+                        error "Backend container not found for UI Tests!"
                     }
                 }
             }
