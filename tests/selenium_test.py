@@ -460,6 +460,11 @@ def test_full_ui_flow():
     except Exception as e:
         print(f"Selenium Test Failed: {e}")
         try:
+            # Capture failure state
+            screenshot_path = "failure_screenshot.png"
+            driver.save_screenshot(screenshot_path)
+            print(f"Screenshot saved to {screenshot_path}")
+            
             alert = driver.switch_to.alert
             print(f"Active Alert detected during failure: {alert.text}")
             alert.dismiss()

@@ -20,6 +20,7 @@ export default function EditEventModal({
                 <label>{t.title}</label>
                 <input
                     type="text"
+                    name="title"
                     value={editForm.title}
                     onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
                 />
@@ -28,6 +29,7 @@ export default function EditEventModal({
                 <label>{t.subtitle}</label>
                 <input
                     type="text"
+                    name="subtitle"
                     value={editForm.subtitle || ''}
                     onChange={(e) => setEditForm({ ...editForm, subtitle: e.target.value })}
                 />
@@ -36,6 +38,7 @@ export default function EditEventModal({
                 <label>{t.type}</label>
                 <input
                     type="text"
+                    name="type"
                     value={editForm.type}
                     onChange={(e) => setEditForm({ ...editForm, type: e.target.value })}
                 />
@@ -44,6 +47,7 @@ export default function EditEventModal({
                 <label>{t.dateTime}</label>
                 <input
                     type="datetime-local"
+                    name="date"
                     value={editForm.date}
                     onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
                 />
@@ -53,6 +57,7 @@ export default function EditEventModal({
                 <label>{t.location}</label>
                 <input
                     type="text"
+                    name="location"
                     value={editForm.location}
                     onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
                 />
