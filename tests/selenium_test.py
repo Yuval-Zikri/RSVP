@@ -44,10 +44,7 @@ def test_full_ui_flow():
         options=chrome_options
     )
     
-    # Inject ngrok-skip-browser-warning header
-    driver.execute_cdp_cmd('Network.setExtraHTTPHeaders', {
-        'headers': {'ngrok-skip-browser-warning': 'true'}
-    })
+    # Note: ngrok-skip-browser-warning is already set globally in frontend/backend
     
     wait = WebDriverWait(driver, 15)
     
