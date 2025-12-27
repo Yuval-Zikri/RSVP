@@ -55,7 +55,7 @@ def test_full_ui_flow():
         wedding_card = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'event-type-name-primary') and (contains(text(), 'Wedding') or contains(text(), 'חתונה'))]")))
         wedding_card.click()
         
-        next_btn = driver.find_element(By.XPATH, "//button[contains(text(), 'Next') or contains(text(), 'הבא')]")
+        next_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Next') or contains(text(), 'הבא')]")))
         next_btn.click()
         
         # STEP 1: Event Details
@@ -77,12 +77,25 @@ def test_full_ui_flow():
         
         # Location
         print("Setting location...")
-        loc_input = driver.find_element(By.CSS_SELECTOR, "input[placeholder*='Location'] , input[placeholder*='מיקום']")
-        loc_input.send_keys("Tel Aviv")
-        time.sleep(2) # Wait for debounce/search
+        # Use placeholder that matches 'Search for a place...' or 'חפש כתובת...'
+        loc_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[placeholder*='place'], input[placeholder*='כתובת'], input[placeholder*='מקום']")))
+        loc_input.send_keys("Jerusalem")
+        
+        # Click the search button - using CSS selector instead of emoji
+        search_btn = driver.find_element(By.CSS_SELECTOR, ".location-search-container button.btn-secondary")
+        search_btn.click()
+        
+        # Wait for results and select the first one
+        print("Waiting for search results...")
+        first_result = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".search-results-list li")))
+        first_result.click()
+        print("Location selected.")
+        
+        time.sleep(1) # Wait for state update
         
         driver.find_element(By.XPATH, "//button[contains(text(), 'Next') or contains(text(), 'הבא')]").click()
         
+        # (Moving to Step 2)
         # STEP 2: Guests
         print("Step 2: Adding Guests...")
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "guest-import-tabs")))
@@ -95,17 +108,19 @@ def test_full_ui_flow():
         manual_inputs[0].send_keys("Selenium Guest")
         manual_inputs[1].send_keys("selenium@ui-test.com")
         
-        driver.find_element(By.CSS_SELECTOR, ".manual-input-group button").click()
+        add_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".manual-input-group button")))
+        add_btn.click()
         print("Guest added.")
         
-        driver.find_element(By.XPATH, "//button[contains(text(), 'Next') or contains(text(), 'הבא')]").click()
+        next_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Next') or contains(text(), 'הבא')]")))
+        next_btn.click()
         
         # STEP 3: Review & Submit
         print("Step 3: Review and Submit...")
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "review-step")))
         
         # In step 3, there's a primary button to confirm
-        submit_btn = driver.find_element(By.CSS_SELECTOR, ".review-step button.btn-primary")
+        submit_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".review-step button.btn-primary")))
         submit_btn.click()
         
         # Handle Success Alert
@@ -121,13 +136,13 @@ def test_full_ui_flow():
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "event-item")))
         
         # Find our event in the list
-        event_item = driver.find_element(By.XPATH, "//h4[contains(text(), 'Selenium UI Gala')]")
+        event_item = wait.until(EC.element_to_be_clickable((By.XPATH, "//h4[contains(text(), 'Selenium UI Gala')]")))
         event_item.click()
         print("Event selected in dashboard.")
         
         # 3. Get RSVP Link from Preview
         print("Opening Preview to get RSVP link...")
-        view_btn = driver.find_element(By.CLASS_NAME, "btn-info")
+        view_btn = wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "btn-info")))
         view_btn.click()
         
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "iframe")))
@@ -135,13 +150,14 @@ def test_full_ui_flow():
         
         # Switch to iframe to find the link
         driver.switch_to.frame(iframe)
-        rsvp_anchor = driver.find_element(By.XPATH, "//a[contains(text(), 'RSVP') or contains(text(), 'אישור')]")
+        rsvp_anchor = wait.until(EC.presence_of_element_located((By.XPATH, "//a[contains(text(), 'RSVP') or contains(text(), 'אישור')]")))
         rsvp_url = rsvp_anchor.get_attribute("href")
         print(f"Extracted RSVP URL: {rsvp_url}")
         
         driver.switch_to.default_content()
-        # Close modal
-        driver.find_element(By.CLASS_NAME, "modal-close").click()
+        # Close modal - It's usually a button with "Close" or an X
+        close_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Close') or contains(text(), 'סגור')]")))
+        close_btn.click()
         
         # 4. Perform RSVP
         print(f"Navigating to RSVP page: {rsvp_url}")
