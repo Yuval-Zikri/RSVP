@@ -190,8 +190,13 @@ def test_full_ui_flow():
         iframe = driver.find_element(By.TAG_NAME, "iframe")
         driver.switch_to.frame(iframe)
         
-        # Extract RSVP URL
-        rsvp_anchor = wait.until(EC.presence_of_element_located((By.XPATH, "//a[contains(text(), 'RSVP') or contains(text(), 'אישור')]")))
+        # Extract RSVP URL - look for the button with class btn-primary
+        try:
+            rsvp_anchor = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "a.btn-primary")))
+        except:
+            # Fallback: try to find any link with RSVP in text
+            rsvp_anchor = wait.until(EC.presence_of_element_located((By.XPATH, "//a[contains(text(), 'RSVP') or contains(text(), 'אישור')]")))
+        
         rsvp_url = rsvp_anchor.get_attribute("href")
         print(f"Extracted RSVP URL: {rsvp_url}")
         
