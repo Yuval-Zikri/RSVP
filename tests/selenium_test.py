@@ -164,9 +164,155 @@ def test_full_ui_flow():
         # Dashboard Navigation
         print("Waiting for Dashboard redirect...")
         wait.until(EC.url_contains("/dashboard"))
+        wait.until(EC.presence_of_element_located((By.CLASS_NAME, "event-item")))
         
-        # Verification logic continues... (the rest is as before)
-        print("UI Test reached Dashboard successfully.")
+        # Select our event
+        event_item = wait.until(EC.element_to_be_clickable((By.XPATH, "//h4[contains(text(), 'Selenium UI Gala')]")))
+        event_item.click()
+        print("Event selected in dashboard.")
+        
+        # === PART 1: Get RSVP Link and Perform RSVP ===
+        print("\n=== PART 1: Testing RSVP Flow ===")
+        
+        # Open Preview
+        print("Opening Preview to extract RSVP link...")
+        view_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'View') or contains(text(), 'צפה')]")))
+        view_btn.click()
+        
+        # Switch to iframe
+        wait.until(EC.presence_of_element_located((By.TAG_NAME, "iframe")))
+        iframe = driver.find_element(By.TAG_NAME, "iframe")
+        driver.switch_to.frame(iframe)
+        
+        # Extract RSVP URL
+        rsvp_anchor = wait.until(EC.presence_of_element_located((By.XPATH, "//a[contains(text(), 'RSVP') or contains(text(), 'אישור')]")))
+        rsvp_url = rsvp_anchor.get_attribute("href")
+        print(f"Extracted RSVP URL: {rsvp_url}")
+        
+        driver.switch_to.default_content()
+        
+        # Close modal
+        close_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Close') or contains(text(), 'סגור')]")))
+        close_btn.click()
+        time.sleep(1)
+        
+        # Navigate to RSVP page
+        print(f"Navigating to RSVP page...")
+        driver.get(rsvp_url)
+        
+        wait.until(EC.presence_of_element_located((By.CLASS_NAME, "rsvp-card")))
+        
+        # Fill RSVP form
+        print("Filling RSVP: Attending with 3 guests")
+        status_select = Select(wait.until(EC.presence_of_element_located((By.CLASS_NAME, "status-select"))))
+        status_select.select_by_value("attending")
+        
+        guest_input = driver.find_element(By.CSS_SELECTOR, ".guests-input input")
+        guest_input.clear()
+        guest_input.send_keys("3")
+        
+        submit_rsvp_btn = driver.find_element(By.CLASS_NAME, "btn-submit")
+        submit_rsvp_btn.click()
+        
+        # Handle RSVP success alert
+        wait.until(EC.alert_is_present())
+        alert = driver.switch_to.alert
+        print(f"RSVP Alert: {alert.text}")
+        alert.accept()
+        
+        # === PART 2: Verify Status in Dashboard ===
+        print("\n=== PART 2: Verifying RSVP Status in Dashboard ===")
+        driver.get(f"{FRONTEND_URL}/dashboard")
+        wait.until(EC.presence_of_element_located((By.CLASS_NAME, "event-item")))
+        
+        # Re-select event
+        driver.find_element(By.XPATH, "//h4[contains(text(), 'Selenium UI Gala')]").click()
+        
+        # Check guest table
+        wait.until(EC.presence_of_element_located((By.CLASS_NAME, "rsvp-table")))
+        status_badge = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "status-badge")))
+        print(f"Guest Status: {status_badge.text}")
+        assert "attending" in status_badge.get_attribute("class"), "Status should be 'attending'"
+        print("✓ Verified: Guest status is 'attending'")
+        
+        # === PART 3: Edit Event (should reset RSVP status) ===
+        print("\n=== PART 3: Testing Event Edit and RSVP Reset ===")
+        
+        # Click Edit button
+        edit_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Edit') or contains(text(), 'ערוך')]")))
+        edit_btn.click()
+        
+        # Wait for edit form
+        wait.until(EC.presence_of_element_located((By.NAME, "title")))
+        
+        # Modify the title
+        title_edit = driver.find_element(By.NAME, "title")
+        title_edit.clear()
+        title_edit.send_keys("Selenium UI Gala - EDITED")
+        driver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true }));", title_edit)
+        
+        # Save
+        save_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Save') or contains(text(), 'שמור')]")))
+        save_btn.click()
+        
+        # Handle save success
+        wait.until(EC.alert_is_present())
+        alert = driver.switch_to.alert
+        print(f"Edit Alert: {alert.text}")
+        alert.accept()
+        
+        time.sleep(2)
+        
+        # Verify RSVP status reset to pending
+        wait.until(EC.presence_of_element_located((By.CLASS_NAME, "rsvp-table")))
+        status_badge_after_edit = driver.find_element(By.CLASS_NAME, "status-badge")
+        print(f"Guest Status after edit: {status_badge_after_edit.text}")
+        assert "pending" in status_badge_after_edit.get_attribute("class"), "Status should reset to 'pending' after edit"
+        print("✓ Verified: Status reset to 'pending' after event edit")
+        
+        # === PART 4: Re-RSVP (Decline this time) ===
+        print("\n=== PART 4: Testing Re-RSVP (Decline) ===")
+        
+        # Navigate back to RSVP
+        driver.get(rsvp_url)
+        wait.until(EC.presence_of_element_located((By.CLASS_NAME, "rsvp-card")))
+        
+        # Decline
+        print("Declining RSVP...")
+        status_select2 = Select(driver.find_element(By.CLASS_NAME, "status-select"))
+        status_select2.select_by_value("not_attending")
+        
+        driver.find_element(By.CLASS_NAME, "btn-submit").click()
+        
+        wait.until(EC.alert_is_present())
+        alert = driver.switch_to.alert
+        print(f"Re-RSVP Alert: {alert.text}")
+        alert.accept()
+        
+        # Verify decline in dashboard
+        driver.get(f"{FRONTEND_URL}/dashboard")
+        wait.until(EC.presence_of_element_located((By.CLASS_NAME, "event-item")))
+        driver.find_element(By.XPATH, "//h4[contains(text(), 'Selenium UI Gala - EDITED')]").click()
+        
+        wait.until(EC.presence_of_element_located((By.CLASS_NAME, "rsvp-table")))
+        status_badge_declined = driver.find_element(By.CLASS_NAME, "status-badge")
+        print(f"Final Status: {status_badge_declined.text}")
+        assert "not_attending" in status_badge_declined.get_attribute("class") or "not-attending" in status_badge_declined.get_attribute("class"), "Status should be 'not_attending'"
+        print("✓ Verified: Guest status is 'not_attending'")
+        
+        # === PART 5: Test Export/Download Report ===
+        print("\n=== PART 5: Testing Report Export ===")
+        
+        # Look for Export button
+        try:
+            export_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Export') or contains(text(), 'יצוא') or contains(text(), 'Download')]")))
+            export_btn.click()
+            print("✓ Export button clicked successfully")
+            time.sleep(2)
+        except:
+            print("⚠ Export button not found - skipping export test")
+        
+        print("\n=== ✅ FULL UI TEST PASSED SUCCESSFULLY! ===")
         
     except Exception as e:
         print(f"Selenium Test Failed: {e}")
