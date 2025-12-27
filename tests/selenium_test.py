@@ -233,6 +233,12 @@ def test_full_ui_flow():
         guest_input.clear()
         guest_input.send_keys("3")
         
+        # Debug: check form values before submit
+        selected_status = status_select.first_selected_option.get_attribute("value")
+        guest_count_value = guest_input.get_attribute("value")
+        print(f"DEBUG: Status dropdown value: {selected_status}")
+        print(f"DEBUG: Guest count value: {guest_count_value}")
+        
         submit_rsvp_btn = driver.find_element(By.CLASS_NAME, "btn-submit")
         submit_rsvp_btn.click()
         
@@ -241,6 +247,27 @@ def test_full_ui_flow():
         alert = driver.switch_to.alert
         print(f"RSVP Alert: {alert.text}")
         alert.accept()
+        
+        # Verify the RSVP was actually saved via API
+        print("Verifying RSVP was saved in backend...")
+        time.sleep(2)  # Wait for backend to process
+        
+        verify_response = requests.get(
+            f"{BACKEND_URL}/api/events/{found_event_id}/rsvps",
+            headers={'ngrok-skip-browser-warning': 'true'}
+        )
+        
+        if verify_response.status_code == 200:
+            updated_rsvps = verify_response.json()
+            if updated_rsvps and len(updated_rsvps) > 0:
+                first_rsvp = updated_rsvps[0]
+                print(f"Backend RSVP Status: {first_rsvp.get('status')}")
+                print(f"Backend RSVP Guests: {first_rsvp.get('guests_count')}")
+                
+                if first_rsvp.get('status') != 'attending':
+                    print(f"⚠ WARNING: Backend shows status as '{first_rsvp.get('status')}', not 'attending'")
+            else:
+                print("⚠ WARNING: No RSVPs found in backend after submit")
         
         # === PART 2: Verify Status in Dashboard ===
         print("\n=== PART 2: Verifying RSVP Status in Dashboard ===")
