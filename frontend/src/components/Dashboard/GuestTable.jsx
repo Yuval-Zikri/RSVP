@@ -17,7 +17,7 @@ export default function GuestTable({ rsvps, t }) {
                 </thead>
                 <tbody>
                     {rsvps.map((r, i) => (
-                        <tr key={i}>
+                        <tr key={r.id || i} data-guest-id={r.id}>
                             <td>{r.name} <span style={{ fontSize: '0.8em', color: '#666' }}>({r.email})</span></td>
                             <td>
                                 <span className={`status-badge ${r.status}`}>

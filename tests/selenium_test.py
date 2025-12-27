@@ -147,7 +147,10 @@ def test_full_ui_flow():
         
         add_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".manual-input-group button")))
         add_btn.click()
-        print("Guest added.")
+        print("Guest added. Waiting for list to update...")
+        
+        # Wait for guest list to show at least one guest
+        wait.until(EC.text_to_be_present_in_element((By.CLASS_NAME, "guests-list-summary"), "(1)"))
         
         time.sleep(1)
         next_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Next') or contains(text(), 'הבא')]")))
@@ -172,44 +175,56 @@ def test_full_ui_flow():
         wait.until(EC.url_contains("/dashboard"))
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "event-item")))
         
-        # Select our event
-        event_item = wait.until(EC.element_to_be_clickable((By.XPATH, "//h4[contains(text(), 'Selenium UI Gala')]")))
-        event_item.click()
-        print("Event selected in dashboard.")
-        
         # === PART 1: Get RSVP Link and Perform RSVP ===
         print("\n=== PART 1: Testing RSVP Flow ===")
         
         # Get the token directly from the API
         print("Getting RSVP token from API...")
         
-        import requests
+        # Fetch all events to find the one we just created
+        events_response = requests.get(
+            f"{BACKEND_URL}/api/events", 
+            headers={'ngrok-skip-browser-warning': 'true'},
+            timeout=5
+        )
+        if events_response.status_code != 200:
+            raise Exception(f"Failed to fetch events from API: {events_response.text}")
+            
+        events_data = events_response.json()
+        # Find events with matching title, sort by ID descending
+        matching_events = [e for e in events_data if e['title'] == "Selenium UI Gala"]
+        if not matching_events:
+            # Fallback to partial match if needed
+            matching_events = [e for e in events_data if "Selenium UI Gala" in e['title']]
+            
+        if not matching_events:
+             raise Exception("Could not find any event matching 'Selenium UI Gala' in the API.")
+             
+        # Sort by ID descending to get the most recent one
+        matching_events.sort(key=lambda x: x['id'], reverse=True)
+        latest_event = matching_events[0]
+        found_event_id = latest_event['id']
+        print(f"Found latest event ID: {found_event_id} with title: {latest_event['title']}")
         
-        # Try to find the latest event with invitations by searching backwards
-        rsvps = []
-        found_event_id = None
+        # Select our event by ID (more robust)
+        print(f"Selecting event ID {found_event_id} in dashboard sidebar...")
+        event_item = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, f".event-item[data-event-id='{found_event_id}']")))
+        event_item.click()
+        print("Event selected in dashboard.")
         
-        # Start from a higher ID and work backwards to find the most recent event
-        for event_id in range(100, 0, -1):
-            try:
-                rsvps_response = requests.get(
-                    f"{BACKEND_URL}/api/events/{event_id}/rsvps", 
-                    headers={'ngrok-skip-browser-warning': 'true'},
-                    timeout=2
-                )
-                if rsvps_response.status_code == 200:
-                    rsvps_data = rsvps_response.json()
-                    if rsvps_data and len(rsvps_data) > 0:
-                        # Found an event with invitations
-                        rsvps = rsvps_data
-                        found_event_id = event_id
-                        print(f"Found event ID {event_id} with {len(rsvps)} invitation(s)")
-                        break
-            except:
-                continue
+        # Now get the RSVPs for this specific event
+        rsvps_response = requests.get(
+            f"{BACKEND_URL}/api/events/{found_event_id}/rsvps", 
+            headers={'ngrok-skip-browser-warning': 'true'},
+            timeout=5
+        )
+        if rsvps_response.status_code != 200:
+            raise Exception(f"Failed to fetch RSVPs for event {found_event_id}: {rsvps_response.text}")
+            
+        rsvps = rsvps_response.json()
         
-        if not rsvps or not found_event_id:
-            raise Exception("Could not find any event with invitations. The event might not have been created properly.")
+        if not rsvps:
+            raise Exception(f"Event ID {found_event_id} has no invitations. The invitations might not have been created properly.")
         
         # Get the first guest's token
         first_guest = rsvps[0]

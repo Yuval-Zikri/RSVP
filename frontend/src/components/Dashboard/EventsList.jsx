@@ -20,6 +20,7 @@ export default function EventsList({
                 {events.map(ev => (
                     <div
                         key={ev.id}
+                        data-event-id={ev.id}
                         className={`event-item ${selectedEvent?.id === ev.id ? 'active' : ''}`}
                         onClick={() => onSelectEvent(ev)}
                     >
