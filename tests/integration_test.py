@@ -150,7 +150,7 @@ def test_full_scenario():
     print("\n=== Integration Test: Full Scenario ===")
     
     # 1. Verify Assets
-    bg_image_url = "http://localhost:3000/src/background/wadding.jpg"
+    bg_image_url = "wadding.jpg"
     if os.path.exists("/app/backgrounds/wadding.jpg"):
         print("Verified: Background image file exists on server.")
     else:
