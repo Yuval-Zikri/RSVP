@@ -332,8 +332,33 @@ def test_full_ui_flow():
         # === PART 3: Edit Event (should reset RSVP status) ===
         print("\n=== PART 3: Testing Event Edit and RSVP Reset ===")
         
-        # Click Edit button - it's in the EventsList component
-        edit_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(@class, 'edit-btn') or contains(text(), 'Edit') or contains(text(), 'ערוך')]")))
+        # First, make sure we're looking at the correct event in the sidebar
+        # Find all "Selenium UI Gala" events and get the edit button of the last one
+        print(f"Looking for edit button of event ID {found_event_id}...")
+        
+        event_items = driver.find_elements(By.CLASS_NAME, "event-item")
+        edit_btn = None
+        
+        # Get the last event-item (most recent)
+        if event_items:
+            last_event = event_items[-1]
+            # Find the edit button within this event
+            try:
+                edit_btn = last_event.find_element(By.CLASS_NAME, "btn-edit")
+                print(f"Found edit button in last event item")
+            except:
+                print("Could not find btn-edit in last event, trying generic selector...")
+        
+        # Fallback to generic selector
+        if not edit_btn:
+            edit_buttons = driver.find_elements(By.CLASS_NAME, "btn-edit")
+            if edit_buttons:
+                edit_btn = edit_buttons[-1]  # Take the last one
+                print(f"Using last edit button from {len(edit_buttons)} buttons found")
+        
+        if not edit_btn:
+            raise Exception("Could not find edit button")
+        
         edit_btn.click()
         
         # Wait for edit modal/form
