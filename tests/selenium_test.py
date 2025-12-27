@@ -60,40 +60,51 @@ def test_full_ui_flow():
         
         # STEP 1: Event Details
         print("Step 1: Filling Event Details...")
-        # Wait for the title input which has a placeholder
-        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[placeholder*='Wedding'], input[placeholder*='חתונה']")))
+        # Wait for the form-step container
+        wait.until(EC.presence_of_element_located((By.CLASS_NAME, "form-step")))
         
-        inputs = driver.find_elements(By.TAG_NAME, "input")
-        # Title
-        inputs[0].send_keys("Selenium UI Gala")
-        # Subtitle
-        inputs[1].send_keys("Automated Test Runner")
+        # Use more specific selectors for Title and Subtitle
+        print("Entering title...")
+        title_input = wait.until(EC.presence_of_element_located((By.XPATH, "//label[contains(text(), 'Title') or contains(text(), 'שם האירוע')]/following-sibling::input[1]")))
+        title_input.clear()
+        title_input.send_keys("Selenium UI Gala")
         
-        # Date - Using JS to set value is much more reliable across different locales
+        print("Entering subtitle...")
+        subtitle_input = wait.until(EC.presence_of_element_located((By.XPATH, "//label[contains(text(), 'Subtitle') or contains(text(), 'תת כותרת')]/following-sibling::input[1]")))
+        subtitle_input.clear()
+        subtitle_input.send_keys("Automated Test Runner")
+        
+        # Date - Improved JS injection to trigger React state updates
         print("Setting date...")
         date_input = driver.find_element(By.CSS_SELECTOR, "input[type='datetime-local']")
-        driver.execute_script("arguments[0].value = '2025-12-31T18:00';", date_input)
-        driver.execute_script("arguments[0].dispatchEvent(new Event('change'))", date_input)
+        driver.execute_script("""
+            var el = arguments[0];
+            el.value = '2025-12-31T18:00';
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+        """, date_input)
         
         # Location
         print("Setting location...")
-        # Use placeholder that matches 'Search for a place...' or 'חפש כתובת...'
         loc_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[placeholder*='place'], input[placeholder*='כתובת'], input[placeholder*='מקום']")))
+        loc_input.clear()
         loc_input.send_keys("Jerusalem")
         
-        # Click the search button - using CSS selector instead of emoji
+        # Click search
         search_btn = driver.find_element(By.CSS_SELECTOR, ".location-search-container button.btn-secondary")
         search_btn.click()
         
-        # Wait for results and select the first one
+        # Wait for and select result
         print("Waiting for search results...")
         first_result = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".search-results-list li")))
         first_result.click()
         print("Location selected.")
         
-        time.sleep(1) # Wait for state update
+        time.sleep(2) # Extra wait to ensure React state is updated
         
-        driver.find_element(By.XPATH, "//button[contains(text(), 'Next') or contains(text(), 'הבא')]").click()
+        # Proceed to Next
+        next_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Next') or contains(text(), 'הבא')]")))
+        next_btn.click()
         
         # (Moving to Step 2)
         # STEP 2: Guests
