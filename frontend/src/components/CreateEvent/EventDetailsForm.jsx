@@ -20,6 +20,7 @@ export default function EventDetailsForm({ formData, onFormDataChange, language 
         <div className="form-step">
             <label>{language === 'en' ? 'Event Title' : 'שם האירוע'}</label>
             <input
+                name="title"
                 value={formData.title}
                 onChange={e => onFormDataChange({ ...formData, title: e.target.value })}
                 placeholder={language === 'en' ? "e.g. Yuval's Wedding" : "לדוגמה: החתונה של יובל"}
@@ -27,6 +28,7 @@ export default function EventDetailsForm({ formData, onFormDataChange, language 
 
             <label>{language === 'en' ? 'Subtitle / Hosts' : 'תת כותרת / מארחים'}</label>
             <input
+                name="subtitle"
                 value={formData.subtitle}
                 onChange={e => onFormDataChange({ ...formData, subtitle: e.target.value })}
                 placeholder={language === 'en' ? "e.g. Hila & Ido" : "לדוגמה: הילה & עידו"}
@@ -50,6 +52,7 @@ export default function EventDetailsForm({ formData, onFormDataChange, language 
 
             <label style={{ marginTop: '20px' }}>{language === 'en' ? 'Date' : 'תאריך'}</label>
             <input
+                name="date"
                 type="datetime-local"
                 value={formData.date}
                 onChange={e => onFormDataChange({ ...formData, date: e.target.value })}

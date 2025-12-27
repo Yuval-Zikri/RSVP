@@ -72,6 +72,7 @@ export default function SearchBar({
         <>
             <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
                 <input
+                    name="location_search"
                     value={searchQuery}
                     onChange={e => onSearchQueryChange(e.target.value)}
                     placeholder={language === 'en' ? 'Search for a place...' : 'חפש כתובת או מקום...'}

@@ -1,6 +1,7 @@
 import time
 import requests
 import sys
+import os
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
@@ -51,7 +52,7 @@ def test_full_ui_flow():
         print("Step 0: Selecting Event Type...")
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "event-type-card")))
         
-        # Select Wedding - updated selector to match div.event-type-name-primary
+        # Select Wedding
         wedding_card = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'event-type-name-primary') and (contains(text(), 'Wedding') or contains(text(), 'חתונה'))]")))
         wedding_card.click()
         
@@ -62,22 +63,23 @@ def test_full_ui_flow():
         print("Step 1: Filling Event Details...")
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "form-step")))
         
-        # 1. Enter Title using direct NAME selector and JS as backup
+        # 1. Enter Title using NAME selector
         print("Entering title...")
-        title_input = wait.until(EC.presence_of_element_located((By.NAME, "title")))
+        title_input = wait.until(EC.visibility_of_element_located((By.NAME, "title")))
         title_input.clear()
         title_input.send_keys("Selenium UI Gala")
         driver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true }));", title_input)
         
         # 2. Enter Subtitle
         print("Entering subtitle...")
-        subtitle_input = wait.until(EC.presence_of_element_located((By.NAME, "subtitle")))
+        subtitle_input = wait.until(EC.visibility_of_element_located((By.NAME, "subtitle")))
         subtitle_input.clear()
         subtitle_input.send_keys("Automated Test Runner")
+        driver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true }));", subtitle_input)
         
         # 3. Setting Date
         print("Setting date...")
-        date_input = driver.find_element(By.CSS_SELECTOR, "input[type='datetime-local']")
+        date_input = driver.find_element(By.NAME, "date")
         driver.execute_script("""
             var el = arguments[0];
             el.value = '2025-12-31T18:00';
@@ -85,9 +87,9 @@ def test_full_ui_flow():
             el.dispatchEvent(new Event('change', { bubbles: true }));
         """, date_input)
         
-        # 4. Location - This part is critical. We search and must ensure selection happens.
+        # 4. Location
         print("Setting location...")
-        loc_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".location-search-container input")))
+        loc_input = wait.until(EC.visibility_of_element_located((By.NAME, "location_search")))
         loc_input.clear()
         loc_input.send_keys("Jerusalem")
         
@@ -96,22 +98,19 @@ def test_full_ui_flow():
         search_btn.click()
         
         print("Waiting for search results list...")
-        # Wait for the UL to appear
-        wait.until(EC.presence_of_element_located((By.CLASS_NAME, "search-results-list")))
+        wait.until(EC.visibility_of_element_located((By.CLASS_NAME, "search-results-list")))
         
-        # Find and click the first LI
         first_result = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".search-results-list li")))
         print(f"Selecting location result: {first_result.text}")
         first_result.click()
         
-        # Verification: Wait a bit and check if a "Next" button click works
+        # Sync time
         time.sleep(2) 
         
         print("Proceeding to Step 2...")
         next_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Next') or contains(text(), 'הבא')]")))
         next_btn.click()
         
-        # (Moving to Step 2)
         # STEP 2: Guests
         print("Step 2: Adding Guests...")
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "guest-import-tabs")))
@@ -120,14 +119,15 @@ def test_full_ui_flow():
         tabs = driver.find_elements(By.CLASS_NAME, "tab-btn")
         tabs[1].click()
         
-        manual_inputs = driver.find_elements(By.CSS_SELECTOR, ".manual-input-group input")
-        manual_inputs[0].send_keys("Selenium Guest")
-        manual_inputs[1].send_keys("selenium@ui-test.com")
+        print("Entering guest info...")
+        wait.until(EC.visibility_of_element_located((By.NAME, "guest_name"))).send_keys("Selenium Guest")
+        driver.find_element(By.NAME, "guest_email").send_keys("selenium@ui-test.com")
         
         add_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".manual-input-group button")))
         add_btn.click()
         print("Guest added.")
         
+        time.sleep(1)
         next_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Next') or contains(text(), 'הבא')]")))
         next_btn.click()
         
@@ -135,7 +135,6 @@ def test_full_ui_flow():
         print("Step 3: Review and Submit...")
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "review-step")))
         
-        # In step 3, there's a primary button to confirm
         submit_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".review-step button.btn-primary")))
         submit_btn.click()
         
@@ -164,14 +163,12 @@ def test_full_ui_flow():
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "iframe")))
         iframe = driver.find_element(By.TAG_NAME, "iframe")
         
-        # Switch to iframe to find the link
         driver.switch_to.frame(iframe)
         rsvp_anchor = wait.until(EC.presence_of_element_located((By.XPATH, "//a[contains(text(), 'RSVP') or contains(text(), 'אישור')]")))
         rsvp_url = rsvp_anchor.get_attribute("href")
         print(f"Extracted RSVP URL: {rsvp_url}")
         
         driver.switch_to.default_content()
-        # Close modal - It's usually a button with "Close" or an X
         close_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Close') or contains(text(), 'סגור')]")))
         close_btn.click()
         
@@ -181,11 +178,9 @@ def test_full_ui_flow():
         
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "rsvp-card")))
         
-        # Change status
-        status_select = Select(driver.find_element(By.CLASS_NAME, "status-select"))
+        status_select = Select(wait.until(EC.presence_of_element_located((By.CLASS_NAME, "status-select"))))
         status_select.select_by_value("attending")
         
-        # Set guests
         guest_input = driver.find_element(By.CSS_SELECTOR, ".guests-input input")
         guest_input.clear()
         guest_input.send_keys("5")
@@ -202,18 +197,26 @@ def test_full_ui_flow():
         driver.get(f"{FRONTEND_URL}/dashboard")
         
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "event-card")))
-        # Re-select the event
         driver.find_element(By.XPATH, "//h4[contains(text(), 'Selenium UI Gala')]").click()
         
-        # Check the table for our guest
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "rsvp-table")))
         
-        status_badge = driver.find_element(By.CLASS_NAME, "status-badge")
+        status_badge = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "status-badge")))
         print(f"Final guest status in UI: {status_badge.text}")
         assert "attending" in status_badge.get_attribute("class")
         
         print("\n=== FULL UI TEST PASSED SUCCESSFULLY! ===")
         
+    except Exception as e:
+        print(f"Selenium Test Failed: {e}")
+        # Try to handle unexpected alerts to get their text
+        try:
+            alert = driver.switch_to.alert
+            print(f"Active Alert Text: {alert.text}")
+            alert.dismiss()
+        except:
+            pass
+        sys.exit(1)
     finally:
         driver.quit()
 
@@ -222,9 +225,4 @@ if __name__ == "__main__":
         print("Backend not available. Exiting.")
         sys.exit(1)
         
-    try:
-        test_full_ui_flow()
-    except Exception as e:
-        print(f"Selenium Test Failed: {e}")
-        # Try to take screenshot for debugging if failed
-        sys.exit(1)
+    test_full_ui_flow()

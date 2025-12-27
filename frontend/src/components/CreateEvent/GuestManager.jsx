@@ -94,11 +94,13 @@ export default function GuestManager({ guests, onAddGuests, onRemoveGuest, langu
                     <div className="manual-add-section">
                         <div className="manual-input-group">
                             <input
+                                name="guest_name"
                                 placeholder={language === 'en' ? 'Name' : 'שם מלא'}
                                 value={manualEntry.name}
                                 onChange={e => setManualEntry({ ...manualEntry, name: e.target.value })}
                             />
                             <input
+                                name="guest_email"
                                 placeholder={language === 'en' ? 'Email' : 'אימייל'}
                                 value={manualEntry.email}
                                 onChange={e => setManualEntry({ ...manualEntry, email: e.target.value })}
