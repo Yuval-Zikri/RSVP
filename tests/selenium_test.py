@@ -489,12 +489,18 @@ def test_full_ui_flow():
         # === PART 5: Test Export/Download Report ===
         print("\n=== PART 5: Testing Report Export ===")
         
-        # Look for Export button - use a more robust selector that handles the emoji and exact translation
+        # Verify the data that will be exported (to show the user what's in the "file")
+        print("Fetching final RSVP list for verification:")
+        final_data_resp = requests.get(f"{BACKEND_URL}/api/events/{found_event_id}/rsvps", headers={'ngrok-skip-browser-warning': 'true'})
+        if final_data_resp.status_code == 200:
+            for r in final_data_resp.json():
+                print(f"  - Guest: {r.get('name')}, Email: {r.get('email')}, Status: {r.get('status')}, Guests: {r.get('guests_count')}")
+        
+        # Look for Export button - use dot (.) instead of text() to ignore emojis/whitespace issues
         try:
             print("Looking for Export button...")
-            # Search for button containing "Export" or "ייצוא" or "יצוא" or using the class btn-primary
             export_btn = wait.until(EC.element_to_be_clickable((By.XPATH, 
-                "//button[contains(text(), 'Export') or contains(text(), 'ייצוא') or contains(text(), 'יצוא') or contains(text(), 'Excel')]"
+                "//button[contains(normalize-space(.), 'Export') or contains(normalize-space(.), 'ייצוא') or contains(normalize-space(.), 'יצוא')]"
             )))
             
             # Scroll to it
@@ -503,15 +509,11 @@ def test_full_ui_flow():
             
             export_btn.click()
             print("✓ Export button clicked successfully")
-            
-            # Since we can't easily verify the file download in a remote container without mapping volumes,
-            # we just verify the button action didn't crash
             time.sleep(2)
         except Exception as e:
-            print(f"⚠ Export button not found or could not be clicked: {e}")
-            # Fallback: try to find the button by its position (last primary button in the header)
+            print(f"⚠ Export button not found or could not be clicked via primary selector: {e}")
+            # Fallback: try by Export class if exists or just take the last primary button
             try:
-                print("Trying fallback selector for export button...")
                 btns = driver.find_elements(By.CSS_SELECTOR, ".btn-primary")
                 if btns:
                     btns[-1].click()
