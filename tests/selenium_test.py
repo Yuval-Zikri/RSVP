@@ -77,19 +77,21 @@ def test_full_ui_flow():
         subtitle_input.send_keys("Automated Test Runner")
         driver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true }));", subtitle_input)
         
-        # 3. Setting Date
+        # 3. Setting Date - Using keyboard input like a real user
         print("Setting date...")
         date_input = wait.until(EC.visibility_of_element_located((By.NAME, "date")))
-        # Focus first to ensure React is listening
-        date_input.click()
-        driver.execute_script("""
-            var el = arguments[0];
-            el.value = '2025-12-31T18:00';
-            el.dispatchEvent(new Event('input', { bubbles: true }));
-            el.dispatchEvent(new Event('change', { bubbles: true }));
-            el.dispatchEvent(new Event('blur', { bubbles: true }));
-        """, date_input)
-        time.sleep(0.5)  # Small delay for React to process
+        date_input.click()  # Focus the field
+        time.sleep(0.3)
+        
+        # Clear and type the date manually
+        date_input.clear()
+        # Format: YYYY-MM-DDTHH:MM (required for datetime-local)
+        date_input.send_keys("12312025")  # Date: 31/12/2025
+        date_input.send_keys("1800")      # Time: 18:00
+        
+        # Trigger change event to ensure React picks it up
+        driver.execute_script("arguments[0].dispatchEvent(new Event('change', { bubbles: true }));", date_input)
+        time.sleep(0.5)
         
         # 4. Location
         print("Setting location...")
