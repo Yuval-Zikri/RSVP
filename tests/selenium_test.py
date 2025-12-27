@@ -359,7 +359,16 @@ def test_full_ui_flow():
         if not edit_btn:
             raise Exception("Could not find edit button")
         
+        # Scroll the button into view and wait for it to be clickable
+        print("Scrolling to edit button and waiting for it to be clickable...")
+        driver.execute_script("arguments[0].scrollIntoView(true);", edit_btn)
+        time.sleep(0.5)
+        
+        # Wait for the button to be clickable
+        wait.until(EC.element_to_be_clickable(edit_btn))
+        
         edit_btn.click()
+        print("Edit button clicked")
         
         # Wait for edit modal/form
         wait.until(EC.visibility_of_element_located((By.NAME, "title")))
