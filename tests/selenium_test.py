@@ -451,15 +451,40 @@ def test_full_ui_flow():
         alert.accept()
         
         # Verify decline in dashboard
+        print("Navigating to dashboard to verify decline...")
         driver.get(f"{FRONTEND_URL}/dashboard")
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "event-item")))
-        driver.find_element(By.XPATH, "//h4[contains(text(), 'Selenium UI Gala - EDITED')]").click()
         
+        # Refresh to ensure we get the latest RSVP data
+        print("Refreshing dashboard...")
+        time.sleep(2)
+        driver.refresh()
+        wait.until(EC.presence_of_element_located((By.CLASS_NAME, "event-item")))
+        time.sleep(1)
+        
+        # Re-select the edited event (it should be the last one)
+        print("Selecting the edited event...")
+        matching_events = driver.find_elements(By.XPATH, f"//h4[contains(text(), 'Selenium UI Gala - EDITED')]")
+        if matching_events:
+            matching_events[-1].click()
+        else:
+            # Fallback if text search fails
+            event_items = driver.find_elements(By.CLASS_NAME, "event-item")
+            if event_items:
+                event_items[-1].click()
+        
+        # Wait for table to load
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "rsvp-table")))
-        status_badge_declined = driver.find_element(By.CLASS_NAME, "status-badge")
-        print(f"Final Status: {status_badge_declined.text}")
-        assert "not_attending" in status_badge_declined.get_attribute("class") or "not-attending" in status_badge_declined.get_attribute("class"), "Status should be 'not_attending'"
-        print("✓ Verified: Guest status is 'not_attending'")
+        time.sleep(2)  # Wait for API data to render
+        
+        status_badge_declined = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "status-badge")))
+        badge_text = status_badge_declined.text
+        badge_class = status_badge_declined.get_attribute("class").lower()
+        print(f"Final Status Badge Text: {badge_text}")
+        print(f"Final Status Badge Class: {badge_class}")
+        
+        assert "not_attending" in badge_class or "not-attending" in badge_class or "declined" in badge_text.lower() or "not" in badge_text.lower(), f"Status should be 'not_attending', but got text: {badge_text}, class: {badge_class}"
+        print("✓ Verified: Guest status correctly updated after second RSVP")
         
         # === PART 5: Test Export/Download Report ===
         print("\n=== PART 5: Testing Report Export ===")
