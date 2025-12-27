@@ -270,7 +270,7 @@ def test_full_ui_flow():
                 print("⚠ WARNING: No RSVPs found in backend after submit")
         
         # === PART 2: Verify Status in Dashboard ===
-        print("\n=== PART 2: Verifying RSVP Status in Dashboard ===")
+        print(f"\n=== PART 2: Verifying RSVP Status in Dashboard (Event ID: {found_event_id}) ===")
         driver.get(f"{FRONTEND_URL}/dashboard")
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "event-item")))
         
@@ -283,12 +283,40 @@ def test_full_ui_flow():
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "event-item")))
         time.sleep(2)
         
-        # Re-select event - this triggers the Dashboard to fetch RSVPs from backend
-        print("Re-selecting event to trigger RSVP data reload...")
-        event_title = driver.find_element(By.XPATH, "//h4[contains(text(), 'Selenium UI Gala')]")
-        event_title.click()
+        # Re-select event using the specific event ID we found
+        print(f"Looking for event with ID {found_event_id}...")
+        
+        # Try to find the event by its ID attribute or by matching the title exactly
+        event_items = driver.find_elements(By.CLASS_NAME, "event-item")
+        clicked = False
+        
+        for item in event_items:
+            # Check if this element has a data attribute or ID that matches
+            try:
+                # Some implementations might have data-event-id or similar
+                item_id = item.get_attribute("data-event-id")
+                if item_id and int(item_id) == found_event_id:
+                    print(f"Found event by data-event-id: {item_id}")
+                    item.click()
+                    clicked = True
+                    break
+            except:
+                pass
+        
+        # Fallback: if we couldn't find by ID, look for the most recent "Selenium UI Gala"
+        if not clicked:
+            print("Fallback: Clicking the last 'Selenium UI Gala' event in the list...")
+            matching_events = driver.find_elements(By.XPATH, "//h4[contains(text(), 'Selenium UI Gala')]")
+            if matching_events:
+                # Click the last one (most recent)
+                matching_events[-1].click()
+                clicked = True
+        
+        if not clicked:
+            raise Exception(f"Could not find event ID {found_event_id} in the dashboard")
         
         # Wait for RSVP table to load with fresh data
+        print("Waiting for RSVP data to load...")
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "rsvp-table")))
         time.sleep(2)  # Give time for the API call to complete
         
