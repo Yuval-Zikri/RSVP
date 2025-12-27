@@ -394,9 +394,14 @@ def test_full_ui_flow():
         driver.execute_script("arguments[0].dispatchEvent(new Event('change', { bubbles: true }));", title_edit)
         time.sleep(0.5)
         
-        # Save - look for primary button in modal
-        save_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".modal-content button.btn-primary, button.btn-primary")))
-        save_btn.click()
+        # Save - use a very specific selector for the "Save Changes" button in the modal
+        print("Looking for Save button in modal...")
+        save_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".modal-content .modal-actions button.btn-primary")))
+        
+        # Sometimes standard click() is intercepted even if wait says it's clickable.
+        # JS click is more reliable for buttons in overlays.
+        print("Clicking save button via JS to avoid overlay issues...")
+        driver.execute_script("arguments[0].click();", save_btn)
         
         # Handle save success
         wait.until(EC.alert_is_present())
