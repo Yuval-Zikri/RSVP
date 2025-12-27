@@ -176,7 +176,7 @@ def test_full_ui_flow():
         
         # Open Preview
         print("Opening Preview to extract RSVP link...")
-        view_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'View') or contains(text(), 'צפה')]")))
+        view_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.btn-info")))
         view_btn.click()
         
         # Switch to iframe
@@ -238,21 +238,24 @@ def test_full_ui_flow():
         # === PART 3: Edit Event (should reset RSVP status) ===
         print("\n=== PART 3: Testing Event Edit and RSVP Reset ===")
         
-        # Click Edit button
-        edit_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Edit') or contains(text(), 'ערוך')]")))
+        # Click Edit button - it's in the EventsList component
+        edit_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(@class, 'edit-btn') or contains(text(), 'Edit') or contains(text(), 'ערוך')]")))
         edit_btn.click()
         
-        # Wait for edit form
-        wait.until(EC.presence_of_element_located((By.NAME, "title")))
+        # Wait for edit modal/form
+        wait.until(EC.visibility_of_element_located((By.NAME, "title")))
+        time.sleep(0.5)
         
         # Modify the title
         title_edit = driver.find_element(By.NAME, "title")
         title_edit.clear()
         title_edit.send_keys("Selenium UI Gala - EDITED")
         driver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true }));", title_edit)
+        driver.execute_script("arguments[0].dispatchEvent(new Event('change', { bubbles: true }));", title_edit)
+        time.sleep(0.5)
         
-        # Save
-        save_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Save') or contains(text(), 'שמור')]")))
+        # Save - look for primary button in modal
+        save_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".modal-content button.btn-primary, button.btn-primary")))
         save_btn.click()
         
         # Handle save success
