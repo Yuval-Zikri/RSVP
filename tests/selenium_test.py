@@ -203,7 +203,7 @@ def test_full_ui_flow():
                         # Found an event with invitations
                         rsvps = rsvps_data
                         found_event_id = event_id
-                        print(f"✓ Found event ID {event_id} with {len(rsvps)} invitation(s)")
+                        print(f"Found event ID {event_id} with {len(rsvps)} invitation(s)")
                         break
             except:
                 continue
@@ -215,8 +215,8 @@ def test_full_ui_flow():
         first_guest = rsvps[0]
         token = first_guest['token']
         rsvp_url = f"{FRONTEND_URL}/rsvp/{token}"
-        print(f"✓ Using invitation token: {token}")
-        print(f"✓ RSVP URL: {rsvp_url}")
+        print(f"Using invitation token: {token}")
+        print(f"RSVP URL: {rsvp_url}")
         
         # Navigate to RSVP page
         print(f"Navigating to RSVP page...")
@@ -265,9 +265,9 @@ def test_full_ui_flow():
                 print(f"Backend RSVP Guests: {first_rsvp.get('guests_count')}")
                 
                 if first_rsvp.get('status') != 'attending':
-                    print(f"⚠ WARNING: Backend shows status as '{first_rsvp.get('status')}', not 'attending'")
+                    print(f"WARNING: Backend shows status as '{first_rsvp.get('status')}', not 'attending'")
             else:
-                print("⚠ WARNING: No RSVPs found in backend after submit")
+                print("WARNING: No RSVPs found in backend after submit")
         
         # === PART 2: Verify Status in Dashboard ===
         print(f"\n=== PART 2: Verifying RSVP Status in Dashboard (Event ID: {found_event_id}) ===")
@@ -327,7 +327,7 @@ def test_full_ui_flow():
         print(f"Guest Status Badge Text: {badge_text}")
         
         assert "attending" in badge_class.lower() or "attending" in badge_text.lower(), f"Status should be 'attending', but got class: {badge_class}, text: {badge_text}"
-        print("✓ Verified: Guest status is 'attending'")
+        print("Verified: Guest status is 'attending'")
         
         # === PART 3: Edit Event (should reset RSVP status) ===
         print("\n=== PART 3: Testing Event Edit and RSVP Reset ===")
@@ -429,7 +429,7 @@ def test_full_ui_flow():
         status_badge_after_edit = driver.find_element(By.CLASS_NAME, "status-badge")
         print(f"Guest Status after edit: {status_badge_after_edit.text}")
         assert "pending" in status_badge_after_edit.get_attribute("class"), "Status should reset to 'pending' after edit"
-        print("✓ Verified: Status reset to 'pending' after event edit")
+        print("Verified: Status reset to 'pending' after event edit")
         
         # === PART 4: Re-RSVP (Decline this time) ===
         print("\n=== PART 4: Testing Re-RSVP (Decline) ===")
@@ -484,7 +484,7 @@ def test_full_ui_flow():
         print(f"Final Status Badge Class: {badge_class}")
         
         assert "not_attending" in badge_class or "not-attending" in badge_class or "declined" in badge_text.lower() or "not" in badge_text.lower(), f"Status should be 'not_attending', but got text: {badge_text}, class: {badge_class}"
-        print("✓ Verified: Guest status correctly updated after second RSVP")
+        print("Verified: Guest status correctly updated after second RSVP")
         
         # === PART 5: Test Export/Download Report ===
         print("\n=== PART 5: Testing Report Export ===")
@@ -508,20 +508,20 @@ def test_full_ui_flow():
             time.sleep(0.5)
             
             export_btn.click()
-            print("✓ Export button clicked successfully")
+            print("Export button clicked successfully")
             time.sleep(2)
         except Exception as e:
-            print(f"⚠ Export button not found or could not be clicked via primary selector: {e}")
+            print(f"warning: Export button not found or could not be clicked via primary selector: {e}")
             # Fallback: try by Export class if exists or just take the last primary button
             try:
                 btns = driver.find_elements(By.CSS_SELECTOR, ".btn-primary")
                 if btns:
                     btns[-1].click()
-                    print("✓ Clicked the last btn-primary as fallback")
+                    print("Clicked the last btn-primary as fallback")
                 else:
-                    print("⚠ No primary buttons found for export fallback")
+                    print("warning: No primary buttons found for export fallback")
             except:
-                print("⚠ Fallback also failed")
+                print("warning: Fallback also failed")
         
         # === PART 6: Test Delete Event ===
         print("\n=== PART 6: Testing Event Deletion ===")
@@ -559,9 +559,9 @@ def test_full_ui_flow():
         time.sleep(2)
         remaining_events = driver.find_elements(By.XPATH, f"//h4[contains(text(), 'Selenium UI Gala - EDITED')]")
         assert len(remaining_events) == 0 or remaining_events[-1].get_attribute("data-event-id") != str(found_event_id), "Event should be deleted from sidebar"
-        print("✓ Verified: Event successfully deleted")
+        print("Verified: Event successfully deleted")
         
-        print("\n=== ✅ FULL UI TEST PASSED SUCCESSFULLY! ===")
+        print("\n===FULL UI TEST PASSED SUCCESSFULLY! ===")
         
     except Exception as e:
         print(f"Selenium Test Failed: {e}")
