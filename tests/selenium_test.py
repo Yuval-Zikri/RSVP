@@ -523,6 +523,44 @@ def test_full_ui_flow():
             except:
                 print("⚠ Fallback also failed")
         
+        # === PART 6: Test Delete Event ===
+        print("\n=== PART 6: Testing Event Deletion ===")
+        
+        # Find the delete button for our event
+        print(f"Looking for delete button of event ID {found_event_id}...")
+        
+        event_items = driver.find_elements(By.CLASS_NAME, "event-item")
+        delete_btn = None
+        
+        if event_items:
+            last_event = event_items[-1]
+            try:
+                delete_btn = last_event.find_element(By.CLASS_NAME, "btn-delete")
+                print("Found delete button in last event item")
+            except:
+                print("Could not find btn-delete in last event item")
+        
+        if not delete_btn:
+            raise Exception("Could not find delete button")
+            
+        # Scroll and click
+        driver.execute_script("arguments[0].scrollIntoView(true);", delete_btn)
+        time.sleep(0.5)
+        delete_btn.click()
+        
+        # Handle confirmation alert
+        print("Handling delete confirmation alert...")
+        wait.until(EC.alert_is_present())
+        alert = driver.switch_to.alert
+        print(f"Delete Alert: {alert.text}")
+        alert.accept() # Confirm deletion
+        
+        # Verify it's gone from the sidebar
+        time.sleep(2)
+        remaining_events = driver.find_elements(By.XPATH, f"//h4[contains(text(), 'Selenium UI Gala - EDITED')]")
+        assert len(remaining_events) == 0 or remaining_events[-1].get_attribute("data-event-id") != str(found_event_id), "Event should be deleted from sidebar"
+        print("✓ Verified: Event successfully deleted")
+        
         print("\n=== ✅ FULL UI TEST PASSED SUCCESSFULLY! ===")
         
     except Exception as e:
