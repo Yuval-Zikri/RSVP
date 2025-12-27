@@ -41,7 +41,14 @@ export const dashboardTranslations = {
         failedToLoadPreview: 'Failed to load preview',
         statusAttending: 'Attending',
         statusPending: 'Pending',
-        statusNotAttending: 'Not Attending'
+        statusNotAttending: 'Not Attending',
+        deleteAllEvents: 'Delete All Events',
+        deleteAllConfirm: 'Are you sure you want to delete ALL events? This action cannot be undone!',
+        addGuest: 'Add Guest',
+        email: 'Email',
+        add: 'Add',
+        guestAdded: 'Guest added and invitation sent!',
+        failedToAddGuest: 'Failed to add guest'
     },
     he: {
         yourEvents: 'האירועים שלך',
@@ -85,6 +92,13 @@ export const dashboardTranslations = {
         failedToLoadPreview: 'נכשל בטעינת תצוגה מקדימה',
         statusAttending: 'מגיע',
         statusPending: 'ממתין',
-        statusNotAttending: 'לא מגיע'
+        statusNotAttending: 'לא מגיע',
+        deleteAllEvents: 'מחק את כל האירועים',
+        deleteAllConfirm: 'האם אתה בטוח שברצונך למחוק את כל האירועים? פעולה זו אינה ניתנת לביטול!',
+        addGuest: 'הוסף אורח',
+        email: 'אימייל',
+        add: 'הוספה',
+        guestAdded: 'האורח נוסף וההזמנה נשלחה!',
+        failedToAddGuest: 'נכשל בהוספת אורח'
     }
 };

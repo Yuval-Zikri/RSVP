@@ -62,3 +62,17 @@ def delete_event(event_id):
     db.session.delete(event)
     db.session.commit()
     return jsonify({"message": "Event deleted successfully"}), 200
+
+
+@crud_bp.route('/all', methods=['DELETE'])
+def delete_all_events():
+    """Delete all events and their invitations"""
+    try:
+        # Standard approach to delete all
+        Invitation.query.delete()
+        Event.query.delete()
+        db.session.commit()
+        return jsonify({"message": "All events and invitations deleted successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 400

@@ -11,6 +11,8 @@ export function useDashboard(t) {
     const [previewHtml, setPreviewHtml] = useState('');
     const [editForm, setEditForm] = useState(null);
 
+    const [newGuest, setNewGuest] = useState({ name: '', email: '' });
+
     useEffect(() => {
         fetchEvents();
     }, []);
@@ -55,6 +57,20 @@ export function useDashboard(t) {
                 }
             } catch (err) {
                 console.error("Failed to delete event", err);
+                alert(t.failedToDelete);
+            }
+        }
+    };
+
+    const handleDeleteAllEvents = async () => {
+        if (window.confirm(t.deleteAllConfirm)) {
+            try {
+                await axios.delete('/api/events/all');
+                fetchEvents();
+                setSelectedEvent(null);
+                setRsvps([]);
+            } catch (err) {
+                console.error("Failed to delete all events", err);
                 alert(t.failedToDelete);
             }
         }
@@ -106,6 +122,26 @@ export function useDashboard(t) {
         }
     };
 
+    const handleAddGuest = async (e) => {
+        e.preventDefault();
+        if (!newGuest.name || !newGuest.email) return;
+
+        try {
+            await axios.post('/api/invitations', {
+                event_id: selectedEvent.id,
+                guests: [newGuest]
+            });
+            alert(t.guestAdded);
+            setNewGuest({ name: '', email: '' });
+            // Refresh RSVP list
+            const res = await axios.get(`/api/events/${selectedEvent.id}/rsvps`);
+            setRsvps(res.data);
+        } catch (err) {
+            console.error("Failed to add guest", err);
+            alert(t.failedToAddGuest);
+        }
+    };
+
     const handleViewPreview = async () => {
         try {
             const response = await axios.get(`/api/events/${selectedEvent.id}/preview`);
@@ -145,14 +181,18 @@ export function useDashboard(t) {
         previewModalOpen,
         previewHtml,
         editForm,
+        newGuest,
         setEditForm,
         setEditModalOpen,
         setPreviewModalOpen,
+        setNewGuest,
         handleSelectEvent,
         handleDeleteEvent,
+        handleDeleteAllEvents,
         handleEditEvent,
         handleSaveEdit,
         handleRemindAll,
+        handleAddGuest,
         handleViewPreview,
         handleExportToExcel
     };

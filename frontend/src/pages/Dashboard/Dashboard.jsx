@@ -21,14 +21,18 @@ export default function Dashboard() {
         previewModalOpen,
         previewHtml,
         editForm,
+        newGuest,
         setEditForm,
         setEditModalOpen,
         setPreviewModalOpen,
+        setNewGuest,
         handleSelectEvent,
         handleDeleteEvent,
+        handleDeleteAllEvents,
         handleEditEvent,
         handleSaveEdit,
         handleRemindAll,
+        handleAddGuest,
         handleViewPreview,
         handleExportToExcel
     } = useDashboard(t);
@@ -41,6 +45,7 @@ export default function Dashboard() {
                 onSelectEvent={handleSelectEvent}
                 onEditEvent={handleEditEvent}
                 onDeleteEvent={handleDeleteEvent}
+                onDeleteAllEvents={handleDeleteAllEvents}
                 t={t}
             />
 
@@ -75,6 +80,35 @@ export default function Dashboard() {
                         </div>
 
                         <GuestTable rsvps={rsvps} t={t} />
+
+                        <div className="add-guest-section">
+                            <h4>{t.addGuest}</h4>
+                            <form className="add-guest-form" onSubmit={handleAddGuest}>
+                                <div className="form-group">
+                                    <label>{t.name}</label>
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        value={newGuest.name}
+                                        onChange={(e) => setNewGuest({ ...newGuest, name: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>{t.email}</label>
+                                    <input
+                                        type="email"
+                                        className="form-control"
+                                        value={newGuest.email}
+                                        onChange={(e) => setNewGuest({ ...newGuest, email: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <button type="submit" className="btn btn-primary">
+                                    ➕ {t.add}
+                                </button>
+                            </form>
+                        </div>
                     </>
                 ) : (
                     <p>{t.selectEvent}</p>
