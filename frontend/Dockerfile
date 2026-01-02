@@ -2,7 +2,9 @@
 FROM node:18-alpine as build
 WORKDIR /app
 COPY package*.json ./
-RUN npm install --legacy-peer-deps
+# Install all dependencies (including dev) for build
+# use `npm ci` to respect `package-lock.json` and `--include=dev`
+RUN npm ci --legacy-peer-deps --include=dev
 COPY . .
 RUN npm run build
 
