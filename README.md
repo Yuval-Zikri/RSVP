@@ -58,6 +58,7 @@ The project is organized for scalability and maintainability:
 ```plaintext
 event-manager/
 ├── 🐳 docker-compose.yaml     # Main orchestration file
+├── 📂 tests/                  # Automated Test Suite (Integration & UI)
 ├── 📂 k8s/                    # Kubernetes Manifests (HA)
 │   ├── 📂 namespaces/         # Namespace definition
 │   ├── 📂 database/           # CloudNativePG Cluster
@@ -275,3 +276,38 @@ docker compose version
 3. ID: `gmail-auth`
 4. Username: Your Gmail address
 5. Password: Your Google App Password
+6. ID: `ngrok-token`
+7. Secret: Your [ngrok Authtoken](https://dashboard.ngrok.com/get-started/your-authtoken).
+
+---
+
+## 🧪 Testing
+
+The project includes a comprehensive test suite to ensure stability across the API and the User Interface.
+
+### 🔗 Integration Tests (`tests/integration_test.py`)
+Focuses on the backend logic and third-party integrations.
+*   **Health Checks**: Verifies all services are responsive.
+*   **Email Workflow**: Uses **Mail.tm API** to generate temporary emails and verify that invitations, updates, and reminders are received with the correct content (including background images).
+*   **Business Logic**: Tests mixed RSVP responses (Attending/Declining) and ensures the database updates correctly.
+*   **API Coverage**: Validates location search and event management endpoints.
+
+### 🎭 UI Tests (`tests/selenium_test.py`)
+End-to-End browser automation using **Selenium**.
+*   **Event Wizard Flow**: Simulates a complete user journey: selecting event types, filling details (with React-aware date selection), adding guests, and reviewing.
+*   **RSVP Flow**: Automatically follows an invitation link, submits an RSVP, and verifies the dashboard reflects the change.
+*   **CRUD Operations**: Verifies that editing an event correctly resets RSVP statuses and that deleting an event removes it from the UI.
+*   **Advanced Features**: Tests report exporting and responsive layout transitions.
+
+### 🚀 Running the Tests
+
+
+#### Via Jenkins Pipeline
+The `jenkinsfile` is pre-configured to:
+1.  Set up a clean environment.
+2.  Deploy the full Docker Compose stack.
+3.  Inject credentials for SMTP and Ngrok.
+4.  Execute both Integration and Selenium test stages.
+5.  Report failures with detailed logs (and screenshot captures for Selenium).
+
+
