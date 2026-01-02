@@ -188,33 +188,87 @@ The system includes **Chaoskube** to continuously test resilience.
 *   **Goal**: Prove that the application recovers automatically without user intervention.
 *   **Configuration**: Defined in `k8s/chaos/chaoskube.yaml`.
 
-### 🚀 Deploying to Kubernetes
+### 🚀 Deploying to Kubernetes (Full Guide)
 
-1.  **Prerequisites**:
-    *   Minikube / Kubernetes Cluster
-    *   `kubectl` installed
+Follow these steps to deploy the entire stack from scratch on **Minikube**:
 
-2.  **Deploy Command**:
+#### 1. Start Minikube & Install Dependencies
+```bash
+# Start Minikube
+minikube start
+
+# Install CloudNativePG Operator (Required for Database Cluster)
+kubectl apply --server-side -f https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/main/releases/cnpg-1.25.0.yaml
+```
+
+#### 2. Build Images into Minikube
+Since we use `imagePullPolicy: Never` for local performance, you must build the images directly into the Minikube internal registry:
+```bash
+# Build Frontend
+minikube image build -t event-manager-frontend:latest ./frontend
+
+# Build Backend
+minikube image build -t event-manager-backend:latest ./backend
+
+# Pull External Images (helps avoid connection issues later)
+minikube image pull ngrok/ngrok:latest
+```
+
+#### 3. Initialize Environment
+```bash
+# Create the project structure in Minikube for HostPath volumes
+minikube ssh "sudo mkdir -p /project/frontend/src/background"
+
+# Create Namespace
+kubectl apply -f k8s/namespaces/
+```
+
+#### 4. Deploy the Stack
+You can now deploy all components using a recursive apply:
+```bash
+kubectl apply -f k8s/ --recursive
+```
+
+#### 5. Verify & Access
+```bash
+# Watch pods until all are "Running"
+kubectl get pods -A -w
+
+# Access the Frontend
+minikube service frontend -n event-manager
+
+# Access Monitoring Tools
+minikube service grafana     # Dashboard: Backend Monitoring (Auto-provisioned)
+minikube service prometheus  # Targets: Check backend pods discovery
+```
+
+#### 💡 Troubleshooting Common Issues
+
+*   **ImagePullBackOff (Connection Refused)**:
+    If a pod is stuck pulling an image, try pulling it manually as shown in step 2.
+*   **ContainerCreating (Volume Issues)**:
+    If the backend is stuck, ensure the background directory exists inside Minikube:
     ```bash
-    # 1. Create Namespace
-    kubectl apply -f k8s/namespaces/namespace.yaml
-
-    # 2. Deploy Database (Wait for 3 pods to be Running)
-    kubectl apply -f k8s/database/
-
-    # 3. Deploy Application Services
-    kubectl apply -f k8s/backend/
-    kubectl apply -f k8s/frontend/
-    kubectl apply -f k8s/ngrok/
-
-    # 4. Enable Chaos (Optional)
-    kubectl apply -f k8s/chaos/
+    minikube ssh "sudo mkdir -p /project/frontend/src/background"
+    ```
+*   **Generic Reset**:
+    If things get messy, you can always start fresh:
+    ```bash
+    minikube delete
+    minikube start
     ```
 
-3.  **Verify Status**:
-    ```bash
-    kubectl get pods -n event-manager -w
-    ```
+---
+
+### 📊 Monitoring & Observability
+
+Our Kubernetes setup includes a fully automated monitoring stack:
+
+*   **Prometheus**: Automatically discovers all 3 Backend replicas using Kubernetes Service Discovery (RBAC enabled).
+*   **Grafana**: Pre-configured with:
+    *   **Automatic Data Source**: Points to Prometheus on startup.
+    *   **Dashboard Provisioning**: A "Backend Monitoring Dashboard" is created automatically, showing real-time replica status and availability.
+*   **Health Checks**: Both Liveness and Readiness probes are configured for Backend/Frontend to ensure the Load Balancer only sends traffic to healthy pods.
 
 ---
 
