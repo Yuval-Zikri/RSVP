@@ -227,7 +227,7 @@ To allow Jenkins to communicate with the Docker engine on your Windows host, you
 Run this command in your terminal:
 
 ```bash
-docker run -d -p 8080:8080 -p 50000:50000 --name jenkins --user root -v /var/run/docker.sock:/var/run/docker.sock -v jenkins_home:/var/jenkins_home jenkins/jenkins:lts
+docker run -d -p 8080:8080 -p 50000:50000 --name jenkins -v /var/run/docker.sock:/var/run/docker.sock -v jenkins_home:/var/jenkins_home jenkins/jenkins:lts
 ```
 
 ### 2. Install Docker in Jenkins Container & Fix Permissions
