@@ -262,21 +262,42 @@ minikube service prometheus  # Targets: Check backend pods discovery
 
 ### 📊 Monitoring & Observability
 
-Our Kubernetes setup includes a fully automated monitoring stack:
+Our Kubernetes setup includes a fully automated monitoring stack designed for high-visibility and proactive health tracking:
 
-*   **Prometheus**: Automatically discovers all 3 Backend replicas using Kubernetes Service Discovery (RBAC enabled).
-*   **Grafana**: Pre-configured with:
-    *   **Automatic Data Source**: Points to Prometheus on startup.
-    *   **Dashboard Provisioning**: A "Backend Monitoring Dashboard" is created automatically, showing real-time replica status and availability.
-*   **Health Checks**: Both Liveness and Readiness probes are configured for Backend/Frontend to ensure the Load Balancer only sends traffic to healthy pods.
+*   **Prometheus**: 
+    -   **Auto-Discovery**: Uses Kubernetes Service Discovery (RBAC enabled) to automatically find and scrape metrics from all backend replicas.
+    -   **Dynamic Scraping**: Configured via a `ConfigMap` to target pods with the `app: backend` label on port `5000`.
+*   **Grafana**: 
+    -   **Instant Visualization**: Pre-provisioned with a "Backend Monitoring Dashboard".
+    -   **Key Metrics**: Tracks real-time **Replica Count** and **Availability Status** (Up/Down) for each pod.
+    -   **Automated Setup**: Data sources and dashboards are provisioned automatically on startup using YAML configurations.
+*   **Health Awareness**: Integrated with Liveness and Readiness probes to ensure only healthy pods contribute to the metrics and receive traffic.
 
 ---
 
-## 🛠️ Jenkins & Docker Integration (Windows Host)
+## 🏗️ Jenkins & Docker Integration (Windows Host)
 
-This guide explains how to set up Jenkins inside Docker on a Windows host and allow it to run Docker commands (Docker-out-of-Docker) with full permissions.
+This section explains how to set up a Jenkins environment capable of running Docker commands ("Docker-out-of-Docker"). You can choose between an automated setup using our custom image or a manual step-by-step approach.
 
-### 1. Run Jenkins Container
+### 🌟 Option A: Custom Jenkins Image (Automated & Recommended)
+This is the fastest way to get started. We use a custom `Jenkins.Dockerfile` that pre-installs the Docker CLI and Docker Compose V2 plugin.
+
+1.  **Launch the stack:**
+    ```bash
+    docker-compose -f docker-compose-jenkins.yaml up -d --build
+    ```
+
+**Benefits:**
+*   **Zero-Config**: Docker and Docker Compose are ready for use immediately.
+*   **Optimized Permissions**: Configured to handle the Docker socket (`/var/run/docker.sock`) right out of the box.
+*   **Persistence**: Uses the `jenkins_home` volume for data reliability.
+
+---
+
+### 🛠️ Option B: Manual Setup (Step-by-Step)
+Use this option if you prefer to configure a standard Jenkins image manually.
+
+#### 1. Run Jenkins Container
 To allow Jenkins to communicate with the Docker engine on your Windows host, you must mount the Docker socket and run the container as root.
 
 Run this command in your terminal:
