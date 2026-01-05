@@ -16,6 +16,7 @@ input[type="datetime-local"] {
     color-scheme: light;
 }
 
+[data-theme="dark"] input[type="datetime-local"],
 [data-theme="dark"] input[type="datetime-local"] {
     color-scheme: dark;
 }
@@ -24,20 +25,14 @@ input::-webkit-calendar-picker-indicator {
     cursor: pointer;
     border-radius: 4px;
     padding: 2px;
-    /* Force visibility in light mode if browser defaults to white */
-    filter: invert(0.2) brightness(0.5);
-}
-
-[data-theme="dark"] input::-webkit-calendar-picker-indicator {
-    filter: invert(1);
 }
 
 input::-webkit-calendar-picker-indicator:hover {
-    background-color: rgba(0, 0, 0, 0.1);
+    background-color: rgba(0, 0, 0, 0.05);
 }
 
 [data-theme="dark"] input::-webkit-calendar-picker-indicator:hover {
-    background-color: rgba(255, 255, 255, 0.2);
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
 .form-step {
