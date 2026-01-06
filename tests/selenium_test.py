@@ -438,6 +438,22 @@ def test_full_ui_flow():
         alert.accept()
         
         time.sleep(2)
+
+        # Refresh to ensure we get the latest data from backend
+        print("Refreshing page to verify RSVP reset...")
+        driver.refresh()
+        wait.until(EC.presence_of_element_located((By.CLASS_NAME, "event-item")))
+        
+        # Select the event again (it might be the last one, or we need to find it)
+        # Since we just edited it, it should be at the bottom if sorted by ID, or changed position if sorted by date
+        # For safety, let's find "Selenium UI Gala - EDITED"
+        try:
+             updated_event = driver.find_element(By.XPATH, "//h4[contains(text(), 'Selenium UI Gala - EDITED')]")
+             updated_event.click()
+        except:
+             # Fallback
+             driver.find_elements(By.CLASS_NAME, "event-item")[-1].click()
+
         
         # Verify RSVP status reset to pending
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "rsvp-table")))
