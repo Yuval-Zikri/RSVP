@@ -495,14 +495,38 @@ def test_full_ui_flow():
         
         # Re-select the edited event (it should be the last one)
         print("Selecting the edited event...")
-        matching_events = driver.find_elements(By.XPATH, f"//h4[contains(text(), 'Selenium UI Gala - EDITED')]")
-        if matching_events:
-            matching_events[-1].click()
-        else:
-            # Fallback if text search fails
-            event_items = driver.find_elements(By.CLASS_NAME, "event-item")
-            if event_items:
-                event_items[-1].click()
+        event_selected = False
+        for attempt in range(3):
+            try:
+                # Re-find inside the loop to avoid stale elements
+                matching_events = driver.find_elements(By.XPATH, f"//h4[contains(text(), 'Selenium UI Gala - EDITED')]")
+                
+                target_element = None
+                if matching_events:
+                    target_element = matching_events[-1]
+                else:
+                    # Fallback if text search fails
+                    event_items = driver.find_elements(By.CLASS_NAME, "event-item")
+                    if event_items:
+                        target_element = event_items[-1]
+                
+                if target_element:
+                    # Ensure visible
+                    driver.execute_script("arguments[0].scrollIntoView(true);", target_element)
+                    time.sleep(0.5)
+                    target_element.click()
+                    event_selected = True
+                    print("Event selected successfully.")
+                    break
+                else:
+                    print(f"Attempt {attempt+1}: No event elements found.")
+                    time.sleep(1)
+            except Exception as e:
+                print(f"Attempt {attempt+1} failed to select event: {e}")
+                time.sleep(1)
+        
+        if not event_selected:
+             raise Exception("Failed to select the edited event after multiple attempts.")
         
         # Wait for table to load
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "rsvp-table")))
@@ -595,7 +619,9 @@ def test_full_ui_flow():
         print("\n===FULL UI TEST PASSED SUCCESSFULLY! ===")
         
     except Exception as e:
-        print(f"Selenium Test Failed: {e}")
+        import traceback
+        print(f"Selenium Test Failed: {repr(e)}")
+        traceback.print_exc()
         try:
             # Capture failure state
             screenshot_path = "failure_screenshot.png"
