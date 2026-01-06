@@ -529,10 +529,15 @@ def test_full_ui_flow():
              raise Exception("Failed to select the edited event after multiple attempts.")
         
         # Wait for table to load
+        print("Waiting for RSVP table container...")
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "rsvp-table")))
-        time.sleep(2)  # Wait for API data to render
         
-        status_badge_declined = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "status-badge")))
+        # KEY FIX: The table might be present but empty or loading. 
+        # Wait specifically for the *rows* or the *status badge* inside it to appear.
+        print("Waiting for status badge to appear inside table...")
+        status_badge_declined = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".rsvp-table .status-badge")))
+        time.sleep(1) # Small buffer for React to finish rendering text
+
         badge_text = status_badge_declined.text
         badge_class = status_badge_declined.get_attribute("class").lower()
         print(f"Final Status Badge Text: {badge_text}")
