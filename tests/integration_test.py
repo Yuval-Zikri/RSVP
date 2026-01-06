@@ -10,8 +10,12 @@ import re
 # Configuration
 BASE_URL = "http://localhost:5000"
 
-# Mail.tm API Configuration
-MAIL_TM_API = "https://api.mail.tm"
+# Mail API Configuration (Fallback support)
+MAIL_PROVIDERS = [
+    "https://api.mail.tm",
+    "https://api.mail.gw"
+]
+ACTIVE_MAIL_API = None # Will be determined at runtime
 TEST_ACCOUNTS = [] # Will store list of test accounts
 
 # Create a session with default headers to skip ngrok browser warning
@@ -43,71 +47,91 @@ def test_health():
     return False
 
 def create_mail_tm_account():
-    """Create a new temporary email account on Mail.tm"""
-    try:
-        # 1. Get Domains
-        resp = requests.get(f"{MAIL_TM_API}/domains")
-        if resp.status_code != 200:
-            print(f"Mail.tm: Failed to get domains: {resp.text}")
-            return None
-        
-        domains = resp.json().get('hydra:member')
-        if not domains:
-             print("Mail.tm: No domains available.")
-             return None
-             
-        domain = domains[0]['domain']
-        
-        # 2. Create Account
-        rnd_str = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
-        username = f"test_{rnd_str}"
-        password = "Password123!"
-        address = f"{username}@{domain}"
-        
-        resp = requests.post(f"{MAIL_TM_API}/accounts", json={
-            "address": address,
-            "password": password
-        })
-        
-        if resp.status_code != 201:
-            print(f"Mail.tm: Failed to create account: {resp.text}")
-            return None
-            
-        # 3. Get JWT Token
-        resp = requests.post(f"{MAIL_TM_API}/token", json={
-            "address": address,
-            "password": password
-        })
-        
-        if resp.status_code != 200:
-            print(f"Mail.tm: Failed to get token: {resp.text}")
-            return None
-            
-        token = resp.json()['token']
-        
-        account = {
-            "address": address,
-            "password": password,
-            "token": token
-        }
-        TEST_ACCOUNTS.append(account)
-        print(f"Generated temporary email: {address}")
-        return account
+    """Create a new temporary email account using available providers"""
+    global ACTIVE_MAIL_API
+    
+    # If we already picked a working API, prioritize it, otherwise try all
+    providers_to_try = MAIL_PROVIDERS
+    if ACTIVE_MAIL_API:
+        providers_to_try = [ACTIVE_MAIL_API] + [p for p in MAIL_PROVIDERS if p != ACTIVE_MAIL_API]
 
-    except Exception as e:
-        print(f"Error creating mail account: {e}")
+    for api_url in providers_to_try:
+        try:
+            print(f"Attempting to create account on {api_url}...")
+            # 1. Get Domains
+            try:
+                resp = requests.get(f"{api_url}/domains", timeout=10)
+            except requests.exceptions.RequestException:
+                print(f"Connection failed to {api_url}")
+                continue
+                
+            if resp.status_code != 200:
+                print(f"{api_url}: Failed to get domains: {resp.text}")
+                continue
+            
+            domains = resp.json().get('hydra:member')
+            if not domains:
+                    print(f"{api_url}: No domains available.")
+                    continue
+                    
+            domain = domains[0]['domain']
+            
+            # 2. Create Account
+            rnd_str = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
+            username = f"test_{rnd_str}"
+            password = "Password123!"
+            address = f"{username}@{domain}"
+            
+            resp = requests.post(f"{api_url}/accounts", json={
+                "address": address,
+                "password": password
+            })
+            
+            if resp.status_code != 201:
+                print(f"{api_url}: Failed to create account: {resp.text}")
+                continue
+                
+            # 3. Get JWT Token
+            resp = requests.post(f"{api_url}/token", json={
+                "address": address,
+                "password": password
+            })
+            
+            if resp.status_code != 200:
+                print(f"{api_url}: Failed to get token: {resp.text}")
+                continue
+                
+            token = resp.json()['token']
+            
+            # Success!
+            ACTIVE_MAIL_API = api_url
+            account = {
+                "address": address,
+                "password": password,
+                "token": token,
+                "api_url": api_url
+            }
+            TEST_ACCOUNTS.append(account)
+            print(f"Generated temporary email: {address} using {api_url}")
+            return account
+
+        except Exception as e:
+            print(f"Error creating mail account on {api_url}: {e}")
+            
+    print("All email providers failed.")
     return None
 
 def verify_email_content(account, expected_subject, image_url_check=None):
     """Check inbox for specific subject and optionally verify image URL presence"""
     print(f"Checking email for {account['address']}...")
     
+    api_url = account.get('api_url', MAIL_PROVIDERS[0]) # Default to first provider if missing
     headers = {"Authorization": f"Bearer {account['token']}"}
     
     # Reduced retries to 10 (~30 seconds) to avoid hanging the build too long if SMTP is slow
     for i in range(10): 
         try:
-            resp = requests.get(f"{MAIL_TM_API}/messages", headers=headers)
+            resp = requests.get(f"{api_url}/messages", headers=headers)
             if resp.status_code == 200:
                 messages = resp.json()['hydra:member']
                 if len(messages) > 0:
@@ -120,7 +144,7 @@ def verify_email_content(account, expected_subject, image_url_check=None):
                         # Full content verification for Image
                         if image_url_check:
                             msg_id = msg_summary['id']
-                            msg_resp = requests.get(f"{MAIL_TM_API}/messages/{msg_id}", headers=headers)
+                            msg_resp = requests.get(f"{api_url}/messages/{msg_id}", headers=headers)
                             if msg_resp.status_code == 200:
                                 full_msg = msg_resp.json()
                                 # Check html body for the image URL
