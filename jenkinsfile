@@ -167,15 +167,14 @@ pipeline {
                             git add k8s/backend/deployment.yaml k8s/frontend/deployment.yaml
                             git commit -m "Update image version to v.${BUILD_NUMBER} [skip ci]"
                             
-                            // Stash any other changes (like terraform lock files or .env) to proceed with rebase
-                            sh "git stash"
+                            # Stash any other changes (like terraform lock files or .env) to proceed with rebase
+                            git stash
                             
                             git pull --rebase https://${GIT_USER}:${GIT_PASS}@github.com/Yuval-Zikri/RSVP.git main
                             git push https://${GIT_USER}:${GIT_PASS}@github.com/Yuval-Zikri/RSVP.git HEAD:main
                             
-                            // Restore stashed changes (optional, but good for cleanup)
-                            // We use try/catch in shell or just ignore failure if nothing was stashed
-                            sh "git stash pop || true"
+                            # Restore stashed changes (optional, but good for cleanup)
+                            git stash pop || true
                         """
                     }
                 }
