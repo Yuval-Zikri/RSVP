@@ -11,6 +11,7 @@ spec:
     path: k8s
     directory:
       recurse: true
+      exclude: '{Argo-CD/*,Argo-CD/**/*}'
   destination:
     server: https://kubernetes.default.svc
     namespace: rsvp-app
