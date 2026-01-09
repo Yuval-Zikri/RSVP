@@ -1,0 +1,39 @@
+terraform {
+  required_providers {
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.23"
+    }
+  }
+}
+
+# Assuming Minikube is running locally and config is in default location
+provider "kubernetes" {
+  config_path = "~/.kube/config"
+}
+
+# Namespace for ArgoCD
+resource "kubernetes_namespace" "argo" {
+  metadata {
+    name = "argo"
+  }
+}
+
+# Namespace for the RSVP Application
+resource "kubernetes_namespace" "rsvp_app" {
+  metadata {
+    name = "rsvp-app"
+  }
+}
+
+# Install ArgoCD via kubectl apply
+# This is a "wrapper" approach to execute the installation manifest
+resource "null_resource" "install_argocd" {
+  depends_on = [kubernetes_namespace.argo]
+
+  # This ensures it runs, but we can prevent re-runs by checking existence in a real script.
+  # For simplicity, we just run apply, which is idempotent.
+  provisioner "local-exec" {
+    command = "kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml"
+  }
+}

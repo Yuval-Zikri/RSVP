@@ -7,6 +7,7 @@ pipeline {
         DOCKER_IMAGE = 'rsvp'
         DOCKER_TAG = "v.${BUILD_NUMBER}"
         DOCKER_COMPOSE_FILE = "docker-compose.yaml"
+        DOCKER_USERNAME = 'yuvalzikri' 
     }
 
     stages {
@@ -45,12 +46,22 @@ pipeline {
             }
         }
 
-        stage('Docker Compose Up') {
+        stage('Terraform Init & Apply') {
+            steps {
+                // Ensure the network exists before docker compose starts
+                // We run terraform inside a container to avoid installing it on Jenkins
+                sh 'docker run --rm -v ${PWD}/terraform:/workspace -v /var/run/docker.sock:/var/run/docker.sock -w /workspace hashicorp/terraform:light init'
+                sh 'docker run --rm -v ${PWD}/terraform:/workspace -v /var/run/docker.sock:/var/run/docker.sock -w /workspace hashicorp/terraform:light apply -auto-approve'
+            }
+        }
+
+        stage('Docker Compose Up (Test Env)') {
             steps {
                 sh "docker --version"
                 sh "docker ps"
                 sh "docker compose version"
-                sh "docker compose -f ${DOCKER_COMPOSE_FILE} up -d --build"
+                // Start only the application and test services for testing
+                sh "docker compose -f ${DOCKER_COMPOSE_FILE} up -d --build postgres backend frontend selenium-chrome"
             }
         }
 
@@ -60,7 +71,6 @@ pipeline {
                     echo "Waiting for services to start..."
                     sleep 15
                     
-                    // Get Backend Container ID
                     def backendId = sh(script: "docker compose -f ${DOCKER_COMPOSE_FILE} ps -q backend", returnStdout: true).trim()
                     
                     if (backendId) {
@@ -100,6 +110,50 @@ pipeline {
                     }
                 }
             }
+        }
+
+        stage('Delivery - Push to Docker Hub') {
+            steps {
+                script {
+                    // Requires 'docker-hub-credentials' with username/password
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DH_USER', passwordVariable: 'DH_PASS')]) {
+                        sh 'echo $DH_PASS | docker login -u $DH_USER --password-stdin'
+                        
+                        // Push only the application images
+                        sh "docker compose -f ${DOCKER_COMPOSE_FILE} push backend frontend"
+                    }
+                }
+            }
+        }
+
+        stage('Update Manifests (GitOps)') {
+            steps {
+                script {
+                    // Requires 'git' with username (git user) and password (PAT)
+                    withCredentials([usernamePassword(credentialsId: 'git', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
+                        sh """
+                            git config user.email "jenkins@example.com"
+                            git config user.name "Jenkins"
+                            
+                            # Replace the tag in the deployment files
+                            # We use sed to search and replace the image tag
+                            sed -i 's|image: yuvalzikri/rsvp-backend:.*|image: yuvalzikri/rsvp-backend:v.${BUILD_NUMBER}|g' k8s/backend/deployment.yaml
+                            sed -i 's|image: yuvalzikri/rsvp-frontend:.*|image: yuvalzikri/rsvp-frontend:v.${BUILD_NUMBER}|g' k8s/frontend/deployment.yaml
+                            
+                            git add k8s/backend/deployment.yaml k8s/frontend/deployment.yaml
+                            git commit -m "Update image version to v.${BUILD_NUMBER} [skip ci]"
+                            git push https://${GIT_USER}:${GIT_PASS}@github.com/Yuval-Zikri/RSVP.git HEAD:main
+                        """
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            // Tear down the test environment
+            sh "docker compose -f ${DOCKER_COMPOSE_FILE} down"
         }
     }
 }

@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: backend
-  namespace: event-manager
+  namespace: rsvp-app
 spec:
   replicas: 3
   selector:
@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
         - name: backend
-          image: event-manager-backend:latest
-          imagePullPolicy: Never
+          image: yuvalzikri/rsvp-backend:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 5000
           env:

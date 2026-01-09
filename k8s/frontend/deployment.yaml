@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: frontend
-  namespace: event-manager
+  namespace: rsvp-app
 spec:
   replicas: 3
   selector:
@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: event-manager-frontend:latest
-          imagePullPolicy: Never
+          image: yuvalzikri/rsvp-frontend:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 80
           volumeMounts:
