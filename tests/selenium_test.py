@@ -70,9 +70,10 @@ def test_full_ui_flow():
         
         # 1. Enter Title
         print("Entering title...")
+        unique_title = f"Selenium UI Gala {int(time.time())}"
         title_input = wait.until(EC.visibility_of_element_located((By.NAME, "title")))
         title_input.clear()
-        title_input.send_keys("Selenium UI Gala")
+        title_input.send_keys(unique_title)
         driver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true }));", title_input)
         driver.execute_script("arguments[0].dispatchEvent(new Event('change', { bubbles: true }));", title_input)
         
@@ -129,7 +130,7 @@ def test_full_ui_flow():
         # Final safety check for Title/Date
         if not title_input.get_attribute('value') or not date_input.get_attribute('value'):
              print("Fields empty in DOM. Injecting values via JS as fallback...")
-             driver.execute_script("arguments[0].value = 'Selenium UI Gala'; arguments[0].dispatchEvent(new Event('input', { bubbles: true }));", title_input)
+             driver.execute_script(f"arguments[0].value = '{unique_title}'; arguments[0].dispatchEvent(new Event('input', { bubbles: true }));", title_input)
              driver.execute_script("arguments[0].value = '2025-12-31T18:00'; arguments[0].dispatchEvent(new Event('input', { bubbles: true }));", date_input)
 
         next_btn.click()
@@ -192,13 +193,13 @@ def test_full_ui_flow():
             
         events_data = events_response.json()
         # Find events with matching title, sort by ID descending
-        matching_events = [e for e in events_data if e['title'] == "Selenium UI Gala"]
+        matching_events = [e for e in events_data if e['title'] == unique_title]
         if not matching_events:
             # Fallback to partial match if needed
-            matching_events = [e for e in events_data if "Selenium UI Gala" in e['title']]
+            matching_events = [e for e in events_data if unique_title in e['title']]
             
         if not matching_events:
-             raise Exception("Could not find any event matching 'Selenium UI Gala' in the API.")
+             raise Exception(f"Could not find any event matching '{unique_title}' in the API.")
              
         # Sort by ID descending to get the most recent one
         matching_events.sort(key=lambda x: x['id'], reverse=True)
@@ -321,7 +322,7 @@ def test_full_ui_flow():
         # Fallback: if we couldn't find by ID, look for the most recent "Selenium UI Gala"
         if not clicked:
             print("Fallback: Clicking the last 'Selenium UI Gala' event in the list...")
-            matching_events = driver.find_elements(By.XPATH, "//h4[contains(text(), 'Selenium UI Gala')]")
+            matching_events = driver.find_elements(By.XPATH, f"//h4[contains(text(), '{unique_title}')]")
             if matching_events:
                 # Click the last one (most recent)
                 matching_events[-1].click()
@@ -404,7 +405,7 @@ def test_full_ui_flow():
         # Modify the title and the date
         title_edit = driver.find_element(By.NAME, "title")
         title_edit.clear()
-        title_edit.send_keys("Selenium UI Gala - EDITED")
+        title_edit.send_keys(f"{unique_title} - EDITED")
         driver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true }));", title_edit)
         
         # Change the date to trigger RSVP reset
@@ -443,12 +444,11 @@ def test_full_ui_flow():
         print("Refreshing page to verify RSVP reset...")
         driver.refresh()
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "event-item")))
-        
         # Select the event again (it might be the last one, or we need to find it)
         # Since we just edited it, it should be at the bottom if sorted by ID, or changed position if sorted by date
         # For safety, let's find "Selenium UI Gala - EDITED"
         try:
-             updated_event = driver.find_element(By.XPATH, "//h4[contains(text(), 'Selenium UI Gala - EDITED')]")
+             updated_event = driver.find_element(By.XPATH, f"//h4[contains(text(), '{unique_title} - EDITED')]")
              updated_event.click()
         except:
              # Fallback
@@ -499,7 +499,7 @@ def test_full_ui_flow():
         for attempt in range(3):
             try:
                 # Re-find inside the loop to avoid stale elements
-                matching_events = driver.find_elements(By.XPATH, f"//h4[contains(text(), 'Selenium UI Gala - EDITED')]")
+                matching_events = driver.find_elements(By.XPATH, f"//h4[contains(text(), '{unique_title} - EDITED')]")
                 
                 target_element = None
                 if matching_events:
@@ -631,7 +631,7 @@ def test_full_ui_flow():
         
         # Verify it's gone from the sidebar
         time.sleep(2)
-        remaining_events = driver.find_elements(By.XPATH, f"//h4[contains(text(), 'Selenium UI Gala - EDITED')]")
+        remaining_events = driver.find_elements(By.XPATH, f"//h4[contains(text(), '{unique_title} - EDITED')]")
         assert len(remaining_events) == 0 or remaining_events[-1].get_attribute("data-event-id") != str(found_event_id), "Event should be deleted from sidebar"
         print("Verified: Event successfully deleted")
         
