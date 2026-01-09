@@ -549,21 +549,48 @@ def test_full_ui_flow():
         print("Waiting for RSVP table container...")
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "rsvp-table")))
         
-        # KEY FIX: Wait until the status badge reflects a change from 'Pending'
+        # Polling loop: check badge, and if still pending, refresh and re-select
         print("Waiting for status badge to update (no longer 'Pending')...")
+        max_attempts = 5
+        status_badge_declined = None
         
-        def badge_is_updated(d):
+        for poll_attempt in range(max_attempts):
             try:
-                badge = d.find_element(By.CSS_SELECTOR, ".rsvp-table .status-badge")
+                badge = driver.find_element(By.CSS_SELECTOR, ".rsvp-table .status-badge")
                 txt = badge.text.lower()
                 cls = badge.get_attribute("class").lower()
-                if "pending" in txt or "pending" in cls:
-                    return False
-                return badge
-            except:
-                return False
+                print(f"  Poll {poll_attempt + 1}: Badge text='{badge.text}', class='{cls}'")
+                
+                if "pending" not in txt and "pending" not in cls:
+                    status_badge_declined = badge
+                    break
+                    
+                # Still pending - refresh and re-select
+                if poll_attempt < max_attempts - 1:
+                    print(f"  Status still pending, refreshing page...")
+                    time.sleep(2)
+                    driver.refresh()
+                    wait.until(EC.presence_of_element_located((By.CLASS_NAME, "event-item")))
+                    time.sleep(1)
+                    
+                    # Re-select the event
+                    try:
+                        event_elem = driver.find_element(By.CSS_SELECTOR, f".event-item[data-event-id='{found_event_id}']")
+                        event_elem.click()
+                    except:
+                        # Fallback to last event
+                        driver.find_elements(By.CLASS_NAME, "event-item")[-1].click()
+                    
+                    wait.until(EC.presence_of_element_located((By.CLASS_NAME, "rsvp-table")))
+                    time.sleep(1)
+            except Exception as e:
+                print(f"  Poll {poll_attempt + 1} error: {e}")
+                time.sleep(2)
         
-        status_badge_declined = wait.until(badge_is_updated)
+        if not status_badge_declined:
+            # Last resort: check what the badge actually says
+            badge = driver.find_element(By.CSS_SELECTOR, ".rsvp-table .status-badge")
+            raise Exception(f"Status never updated from Pending. Final badge: text='{badge.text}', class='{badge.get_attribute('class')}'")
         
         badge_text = status_badge_declined.text
         badge_class = status_badge_declined.get_attribute("class").lower()
@@ -576,6 +603,7 @@ def test_full_ui_flow():
                       
         assert is_declined, f"Status should be 'not_attending', but got text: {badge_text}, class: {badge_class}"
         print("Verified: Guest status correctly updated after second RSVP")
+
         
         # === PART 5: Test Export/Download Report ===
         print("\n=== PART 5: Testing Report Export ===")
