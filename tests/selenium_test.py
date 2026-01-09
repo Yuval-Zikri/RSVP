@@ -532,18 +532,32 @@ def test_full_ui_flow():
         print("Waiting for RSVP table container...")
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "rsvp-table")))
         
-        # KEY FIX: The table might be present but empty or loading. 
-        # Wait specifically for the *rows* or the *status badge* inside it to appear.
-        print("Waiting for status badge to appear inside table...")
-        status_badge_declined = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".rsvp-table .status-badge")))
-        time.sleep(1) # Small buffer for React to finish rendering text
-
+        # KEY FIX: Wait until the status badge reflects a change from 'Pending'
+        print("Waiting for status badge to update (no longer 'Pending')...")
+        
+        def badge_is_updated(d):
+            try:
+                badge = d.find_element(By.CSS_SELECTOR, ".rsvp-table .status-badge")
+                txt = badge.text.lower()
+                cls = badge.get_attribute("class").lower()
+                if "pending" in txt or "pending" in cls:
+                    return False
+                return badge
+            except:
+                return False
+        
+        status_badge_declined = wait.until(badge_is_updated)
+        
         badge_text = status_badge_declined.text
         badge_class = status_badge_declined.get_attribute("class").lower()
         print(f"Final Status Badge Text: {badge_text}")
         print(f"Final Status Badge Class: {badge_class}")
         
-        assert "not_attending" in badge_class or "not-attending" in badge_class or "declined" in badge_text.lower() or "not" in badge_text.lower(), f"Status should be 'not_attending', but got text: {badge_text}, class: {badge_class}"
+        # Verify it's in a 'not attending' state
+        is_declined = any(x in badge_class for x in ["not_attending", "not-attending", "declined"]) or \
+                      any(x in badge_text.lower() for x in ["not", "declined", "לא"])
+                      
+        assert is_declined, f"Status should be 'not_attending', but got text: {badge_text}, class: {badge_class}"
         print("Verified: Guest status correctly updated after second RSVP")
         
         # === PART 5: Test Export/Download Report ===
