@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: chaoskube
-  namespace: event-manager
+  namespace: rsvp-app
 spec:
   replicas: 1
   selector:
@@ -19,7 +19,7 @@ spec:
           image: ghcr.io/linki/chaoskube:v0.37.1
           args:
             - --interval=2m
-            - --namespaces=event-manager
+            - --namespaces=rsvp-app
             - --labels=app!=chaoskube
             - --no-dry-run
 ---
@@ -27,7 +27,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: chaoskube
-  namespace: event-manager
+  namespace: rsvp-app
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -45,7 +45,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: chaoskube
-    namespace: event-manager
+    namespace: rsvp-app
 roleRef:
   kind: ClusterRole
   name: chaoskube-terminator

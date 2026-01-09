@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: backend-config
-  namespace: event-manager
+  namespace: rsvp-app
 data:
   # URL negrok
   BASE_URL: "https://semisentimentally-geyseral-cliff.ngrok-free.dev"

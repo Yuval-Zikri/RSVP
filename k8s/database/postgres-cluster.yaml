@@ -2,7 +2,7 @@ apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
   name: postgres-cluster
-  namespace: event-manager
+  namespace: rsvp-app
 spec:
   instances: 3
 
