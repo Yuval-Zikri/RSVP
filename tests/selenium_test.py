@@ -481,6 +481,23 @@ def test_full_ui_flow():
         print(f"Re-RSVP Alert: {alert.text}")
         alert.accept()
         
+        # Give backend time to process the RSVP
+        print("Waiting for backend to process RSVP...")
+        time.sleep(3)
+        
+        # Verify via API that the backend actually saved the decline
+        api_verify_response = requests.get(
+            f"{BACKEND_URL}/api/events/{found_event_id}/rsvps",
+            headers={'ngrok-skip-browser-warning': 'true'}
+        )
+        if api_verify_response.status_code == 200:
+            api_rsvps = api_verify_response.json()
+            if api_rsvps and len(api_rsvps) > 0:
+                api_status = api_rsvps[0].get('status')
+                print(f"API Verification: Backend shows status as '{api_status}'")
+                if api_status != 'not_attending':
+                    print(f"WARNING: Backend still shows '{api_status}' instead of 'not_attending'")
+        
         # Verify decline in dashboard
         print("Navigating to dashboard to verify decline...")
         driver.get(f"{FRONTEND_URL}/dashboard")
