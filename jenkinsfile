@@ -60,7 +60,7 @@ pipeline {
                 sh "docker --version"
                 sh "docker ps"
                 sh "docker compose version"
-                // Start only the application and test services for testing
+                //  Start only the application and test services for testing
                 sh "docker compose -f ${DOCKER_COMPOSE_FILE} up -d --build postgres backend frontend selenium-chrome"
             }
         }
@@ -157,3 +157,4 @@ pipeline {
         }
     }
 }
+
