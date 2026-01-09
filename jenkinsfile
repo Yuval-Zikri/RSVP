@@ -166,6 +166,7 @@ pipeline {
                             
                             git add k8s/backend/deployment.yaml k8s/frontend/deployment.yaml
                             git commit -m "Update image version to v.${BUILD_NUMBER} [skip ci]"
+                            git pull --rebase https://${GIT_USER}:${GIT_PASS}@github.com/Yuval-Zikri/RSVP.git main
                             git push https://${GIT_USER}:${GIT_PASS}@github.com/Yuval-Zikri/RSVP.git HEAD:main
                         """
                     }
