@@ -208,7 +208,9 @@ terraform apply -auto-approve
 After Terraform finishes:
 1.  **Get Admin Password**:
     ```bash
-    kubectl -n argo get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+    (kubectl -n argo get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | 
+    ForEach-Object { [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_)) })
+
     ```
 2.  **Access UI**:
     ```bash
