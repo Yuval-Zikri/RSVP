@@ -57,15 +57,25 @@ The project is organized for scalability and maintainability:
 
 ```plaintext
 event-manager/
-├── 🐳 docker-compose.yaml     # Main orchestration file
-├── 📂 tests/                  # Automated Test Suite (Integration & UI)
+├── 🐳 docker-compose.yaml     # Local Dev & Test orchestration
+├── 📄 Jenkinsfile             # CI/CD Pipeline Definition
+├── 📄 Jenkins.Dockerfile      # Custom Jenkins Image with Docker CLI
+├── 📂 terraform/              # Infrastructure as Code (IaC)
+│   ├── 📄 main.tf             # Cluster Setup (Namespaces, ArgoCD)
+│   └── 📄 terraform.tfstate   # State file (Local)
+├── 📂 tests/                  # Automated Test Suite
+│   ├── 📄 integration_test.py # Backend Integration Tests
+│   └── 📄 selenium_test.py    # Frontend UI Tests
 ├── 📂 k8s/                    # Kubernetes Manifests (HA)
+│   ├── 📂 Argo-CD/            # ArgoCD Application Manifests
 │   ├── 📂 namespaces/         # Namespace definition
 │   ├── 📂 database/           # CloudNativePG Cluster
 │   ├── 📂 backend/            # Deployment, Service, HPA
 │   ├── 📂 frontend/           # Deployment, Service, HPA
 │   ├── 📂 ngrok/              # External Access
-│   └── 📂 chaos/              # Chaoskube Configuration
+│   ├── 📂 chaos/              # Chaoskube Configuration
+│   ├── 📂 prometheus/         # Monitoring - Prometheus
+│   └── 📂 grafana/            # Monitoring - Grafana Dashboards
 ├── 📂 backend/
 │   ├── 📂 routes/
 │   │   ├── 📂 events/         # Event CRUD & Actions
@@ -90,26 +100,10 @@ event-manager/
     ├── 📄 Dockerfile          # Frontend Image
     ├── 📂 src/
     │   ├── 📂 background/     # Static background assets (Images)
-    │   ├── 📂 components/
-    │   │   ├── 📂 CreateEvent/ # Step wizard components
-    │   │   ├── 📂 Dashboard/   # Stats, Tables, Modals
-    │   │   ├── 📂 shared/      # Inputs, Buttons, Modal wrappers
-    │   │   ├── 📄 Sidebar.jsx  # Navigation Sidebar
-    │   │   ├── 📄 EventPreview.jsx # Live Preview Component
-    │   │   └── 📄 ErrorBoundary.jsx # Error Handling
-    │   ├── 📂 pages/
-    │   │   ├── 📂 CreateEvent/ # Main creation view
-    │   │   ├── 📂 Dashboard/
-    │   │   │   ├── 📄 Dashboard.jsx      # Main View
-    │   │   │   ├── 📄 useDashboard.js    # Logic Hook
-    │   │   │   └── 📄 dashboardTranslations.js # Translations
-    │   │   └── 📂 RSVP/        # Guest RSVP landing page
+    │   ├── 📂 components/     # Reusable UI Components
+    │   ├── 📂 pages/          # Route Pages (CreateEvent, Dashboard)
+    │   ├── � styles/         # CSS Modules & Themes
     │   ├── 📂 utils/          # Helpers & Translations
-    │   ├── 📂 styles/
-    │   │   ├── 📂 components/ # Scoped CSS (buttons, cards, forms)
-    │   │   ├── 📂 layouts/    # Page layouts (dashboard, sidebar)
-    │   │   ├── 📂 themes/     # Dark/Light mode definitions
-    │   │   └── 📄 base.css    # Global Reset & Variables
     │   ├── 📄 App.jsx         # Main App Component
     │   ├── 📄 main.jsx        # Entry Point
     │   └── 📄 contexts.js     # React Context Definitions
@@ -188,11 +182,58 @@ The system includes **Chaoskube** to continuously test resilience.
 *   **Goal**: Prove that the application recovers automatically without user intervention.
 *   **Configuration**: Defined in `k8s/chaos/chaoskube.yaml`.
 
-### 🚀 Deploying to Kubernetes (Full Guide)
+## ♾️ GitOps & CI/CD Workflow (Method A - Recommended)
+This project uses a modern **GitOps** architecture, meaning the state of the Git repository is the single source of truth for the Kubernetes cluster.
 
-Follow these steps to deploy the entire stack from scratch on **Minikube**:
+### Architecture Overview
+1.  **Infrastructure**: Managed by **Terraform** (Namespaces, ArgoCD installation).
+2.  **Continuous Integration (CI)**: **Jenkins** listens for code changes, runs tests (Docker Compose), builds images, and pushes to Docker Hub.
+3.  **Continuous Deployment (CD)**: **Jenkins** updates the `deployment.yaml` in Git with the new image tag (`v.BUILD_NUMBER`).
+4.  **GitOps Sync**: **ArgoCD** detects the change in Git and automatically syncs the Kubernetes cluster to match the new state.
 
-#### 1. Start Minikube & Install Dependencies
+### 🚀 Setup Guide (GitOps)
+
+Follow these steps to deploy the stack using the **GitOps workflow**.
+
+#### 1. Infrastructure Setup (Terraform)
+We use Terraform to bootstrap the cluster (Create Namespaces `argo`, `rsvp-app` and install ArgoCD).
+
+```bash
+cd terraform
+terraform init
+terraform apply -auto-approve
+```
+
+#### 2. Configure ArgoCD
+After Terraform finishes:
+1.  **Get Admin Password**:
+    ```bash
+    kubectl -n argo get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+    ```
+2.  **Access UI**:
+    ```bash
+    kubectl port-forward svc/argocd-server -n argo 8888:443
+    ```
+    Open [https://localhost:8888](https://localhost:8888).
+3.  **Connect Repo**: Go to Settings -> Repositories -> Connect Repo (HTTPS). Use your GitHub credentials/Token.
+4.  The application `rsvp-app` is already created by Terraform/Manifests and should start syncing.
+
+#### 3. Setup Jenkins Pipeline
+1.  **Access Jenkins**: [http://localhost:8080](http://localhost:8080)
+2.  **Create Pipeline**: New Item -> Pipeline -> Definition: "Pipeline script from SCM" -> Git URL.
+3.  **Credentials**: 
+    *   `docker-hub-credentials` (Username/Password)
+    *   `git` (Username / Personal Access Token)
+    *   `gmail-auth` & `ngrok-token` (for tests)
+4.  **Triggers**: The pipeline is configured to **Poll SCM** every 2 minutes (`H/2 * * * *`) or via Webhook.
+
+---
+
+## 🚀 Deployment Guide (Method B - Manual)
+
+Follow these steps to deploy the entire stack manually from scratch on **Minikube** (without Jenkins/ArgoCD).
+
+### 1. Start Minikube & Install Dependencies
 ```bash
 # Start Minikube
 minikube start
@@ -201,7 +242,7 @@ minikube start
 kubectl apply --server-side -f https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/main/releases/cnpg-1.25.0.yaml
 ```
 
-#### 2. Build Images into Minikube
+### 2. Build Images into Minikube
 Since we use `imagePullPolicy: Never` for local performance, you must build the images directly into the Minikube internal registry:
 ```bash
 # Build Frontend
@@ -214,7 +255,7 @@ minikube image build -t event-manager-backend:latest ./backend
 minikube image pull ngrok/ngrok:latest
 ```
 
-#### 3. Initialize Environment
+### 3. Initialize Environment
 ```bash
 # Create the project structure in Minikube for HostPath volumes
 minikube ssh "sudo mkdir -p /project/frontend/src/background"
@@ -223,13 +264,13 @@ minikube ssh "sudo mkdir -p /project/frontend/src/background"
 kubectl apply -f k8s/namespaces/
 ```
 
-#### 4. Deploy the Stack
+### 4. Deploy the Stack
 You can now deploy all components using a recursive apply:
 ```bash
 kubectl apply -f k8s/ --recursive
 ```
 
-#### 5. Verify & Access
+### 5. Verify & Access
 ```bash
 # Watch pods until all are "Running"
 kubectl get pods -A -w
@@ -242,7 +283,7 @@ minikube service grafana     # Dashboard: Backend Monitoring (Auto-provisioned)
 minikube service prometheus  # Targets: Check backend pods discovery
 ```
 
-#### 💡 Troubleshooting Common Issues
+### 💡 Troubleshooting Common Issues (Manual Deployment)
 
 *   **ImagePullBackOff (Connection Refused)**:
     If a pod is stuck pulling an image, try pulling it manually as shown in step 2.
