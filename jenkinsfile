@@ -55,7 +55,7 @@ pipeline {
                     // Since Jenkins runs in Docker and Minikube is on host, this is tricky.
                     // For now, let's assume we are just setting up the basic logical resources or skip if not critical.
                     // Actually, the main.tf uses 'config_path = "~/.kube/config"'. 
-                    // That file doesn't exist in the Jenkins container.
+                    // That file doesn't exist in the Jenkins container .
                     
                     // CRITICAL FIX: For the purpose of this project and the "Deploy via Terraform" requirement,
                     // we will skip the actual K8s Apply here if we can't easily reach the host's Kubeconfig.
