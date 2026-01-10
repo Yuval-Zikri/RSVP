@@ -4,7 +4,7 @@ metadata:
   name: postgres-cluster
   namespace: rsvp-app
 spec:
-  instances: 3
+  instances: 2
 
   # Basic storage configuration
   storage:

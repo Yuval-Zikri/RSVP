@@ -22,3 +22,11 @@ postgres_logs.txt
 prometheus_deploy.txt
 prometheus_rs.txt
 kubeconfig_portable_fixed
+all_pods_status_ascii.json
+all_pods_status.json
+database_app_status.json
+database_status_ascii.json
+database_status.json
+ngrok_app_status.json
+ngrok_status_ascii.json
+ngrok_status.json
