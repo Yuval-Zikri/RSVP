@@ -264,7 +264,7 @@ Even with automation, you must perform these steps **once** to connect your tool
     ```bash
     kubectl port-forward svc/argocd-server -n argo 8888:443
     ```
-3.  **Connect Repo**: Log in to [https://localhost:8888](https://localhost:8888), go to Settings -> Repositories -> Connect Repo. (Necessary for ArgoCD to track your fork).
+3.  **Repository Connection**: (Automatic) Jenkins now automatically connects your Git repository to Argo CD using your `git` credentials. No manual steps required.
 
 ##### **B. Setup Jenkins Pipeline**
 1.  **Access Jenkins**: [http://localhost:8080](http://localhost:8080)

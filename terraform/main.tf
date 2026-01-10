@@ -52,13 +52,17 @@ resource "null_resource" "install_cnpg" {
   }
 
   provisioner "local-exec" {
-    command = "kubectl apply --server-side --force-conflicts -f https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/main/releases/cnpg-1.25.0.yaml"
+    command = <<-EOT
+      kubectl apply --server-side --force-conflicts -f https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/main/releases/cnpg-1.25.0.yaml
+      echo "Waiting for CNPG operator to be ready..."
+      kubectl wait --for=condition=available --timeout=120s deployment/cnpg-controller-manager -n cnpg-system
+    EOT
   }
 }
 
 # Install Root Application (App of Apps) via ArgoCD
 resource "null_resource" "install_root_app" {
-  depends_on = [null_resource.argocd_rbac_admin]
+  depends_on = [null_resource.argocd_rbac_admin, null_resource.install_cnpg]
 
   triggers = {
     always_run = "${timestamp()}"
@@ -81,6 +85,7 @@ resource "null_resource" "install_root_app" {
         sleep 5
       done
       kubectl apply -n argo -f ../k8s/Argo-CD/application.yaml
+      kubectl apply -f ../k8s/ --recursive
     EOT
   }
 }

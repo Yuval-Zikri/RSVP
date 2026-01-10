@@ -137,7 +137,8 @@ pipeline {
                     withCredentials([
                         usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS'),
                         file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG'),
-                        string(credentialsId: 'ngrok-token', variable: 'NGROK_TOKEN')
+                        string(credentialsId: 'ngrok-token', variable: 'NGROK_TOKEN'),
+                        usernamePassword(credentialsId: 'git', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')
                     ]) {
                         sh '''
                             # Verify access (optional, but good for debugging)
@@ -157,6 +158,24 @@ pipeline {
                               --from-literal=NGROK_AUTHTOKEN=$NGROK_TOKEN \
                               -n rsvp-app \
                               --dry-run=client -o yaml | kubectl apply -f -
+
+                            # Automate ArgoCD Repo Connection
+                            # We create a secret with the label that ArgoCD expects for repository configs
+                            cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rsvp-repo
+  namespace: argo
+  labels:
+    argocd.argoproj.io/secret-type: repository
+type: Opaque
+stringData:
+  type: git
+  url: https://github.com/Yuval-Zikri/RSVP.git
+  username: $GIT_USER
+  password: $GIT_PASS
+EOF
 
                             # Patch the default service account to use this secret for pulling images
                             kubectl patch serviceaccount default \
@@ -182,7 +201,7 @@ pipeline {
                             
                             # Checkout deploy branch
                             git fetch origin deploy
-                            git checkout deploy
+                            git checkout -f deploy
                             
                             # Merge main into deploy (to get latest k8s/ structure changes if any)
                             # Using -X theirs to prefer main changes in conflicts given we overwrite manifest images anyway
