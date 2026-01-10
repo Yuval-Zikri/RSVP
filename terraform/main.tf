@@ -37,3 +37,11 @@ resource "null_resource" "install_argocd" {
     command = "kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml"
   }
 }
+# Install CloudNativePG Operator via kubectl apply
+resource "null_resource" "install_cnpg" {
+  # This and ArgoCD should ideally both be installed
+  # We use server-side apply as recommended by CNPG docs
+  provisioner "local-exec" {
+    command = "kubectl apply --server-side --force-conflicts -f https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/main/releases/cnpg-1.25.0.yaml"
+  }
+}
