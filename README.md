@@ -186,6 +186,43 @@ The system includes **Chaoskube** to continuously test resilience.
 *   **Goal**: Prove that the application recovers automatically without user intervention.
 *   **Configuration**: Defined in `k8s/chaos/chaoskube.yaml`.
 
+---
+
+## ⚡ Zero-to-Hero: Fresh Start / Recovery Guide
+Use this guide if you just ran `minikube delete` or if this is your first time setting up the project.
+
+### 1. Start the Environment
+```powershell
+minikube start
+minikube tunnel  # Keep this terminal open!
+```
+
+### 2. Update Jenkins Connection
+Since a fresh Minikube cluster has a new internal IP/Certificates, you must update Jenkins:
+1.  **Get new Config (Modified for Jenkins)**:
+    Run this in PowerShell to generate the portable file for Jenkins (using `host.docker.internal`):
+    ```powershell
+    $port = (kubectl config view -o jsonpath="{.clusters[?(@.name=='minikube')].cluster.server}" | Split-Path -Leaf).Split(':')[-1]
+    kubectl config view --flatten --minify | %{ $_ -replace "https://127.0.0.1:$port", "https://host.docker.internal:$port" -replace 'certificate-authority-data:.*', 'insecure-skip-tls-verify: true' } > kubeconfig_for_jenkins
+    ```
+2.  **Update Jenkins**: Go to Jenkins -> Credentials -> System -> Global -> Find `kubeconfig` -> Edit -> Upload the output above as a new file.
+
+### 3. Deploy everything (One-Click)
+Choose **ONE** of the following:
+*   **Via Jenkins (Recommended)**: Simply click **"Build Now"** on your pipeline. It will run Terraform, build images, run tests, and deploy everything via Argo CD.
+*   **Via Local Terraform**:
+    ```bash
+    cd terraform
+    terraform init
+    terraform apply -auto-approve
+    ```
+
+> [!TIP]
+> **What's automated?** 
+> Everything! Terraform will automatically create host directories (`/project/...`), fix Argo CD permissions, and install the "Root App" which pulls all services recursively. Jenkins will dynamically inject your Ngrok Token and Docker secrets.
+
+---
+
 ## ♾️ GitOps & CI/CD Workflow (Method A - Recommended)
 This project uses a modern **GitOps** architecture, meaning the state of the Git repository is the single source of truth for the Kubernetes cluster.
 
