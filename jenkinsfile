@@ -201,7 +201,7 @@ EOF
                             
                             # Checkout deploy branch
                             git fetch origin deploy
-                            git checkout deploy
+                            git checkout -f deploy
                             
                             # Merge main into deploy (to get latest k8s/ structure changes if any)
                             # Using -X theirs to prefer main changes in conflicts given we overwrite manifest images anyway
