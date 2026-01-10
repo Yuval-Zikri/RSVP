@@ -6,7 +6,7 @@ pipeline {
         WORK_SPACE = 'RSVP'
         DOCKER_IMAGE = 'rsvp'
         DOCKER_TAG = "v.${BUILD_NUMBER}"
-        DOCKER_COMPOSE_FILE = "docker-compose.yaml"
+        DOCKER_COMPOSE_FILE = "docker-compose.ci.yaml"
         DOCKER_USERNAME = 'yuvalzikri' 
     }
 
