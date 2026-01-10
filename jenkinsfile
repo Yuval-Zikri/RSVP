@@ -150,6 +150,36 @@ pipeline {
             }
         }
 
+        stage('Inject Secrets to K8s') {
+            steps {
+                script {
+                    withCredentials([
+                        usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS'),
+                        file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')
+                    ]) {
+                        sh '''
+                            # Verify access (optional, but good for debugging)
+                            kubectl get nodes
+                        
+                            # Create or update the secret in rsvp-app namespace
+                            # We use dry-run to generate yaml and apply it to handle updates gracefully
+                            kubectl create secret docker-registry regcred \
+                              --docker-username=$DOCKER_USER \
+                              --docker-password=$DOCKER_PASS \
+                              --docker-server=https://index.docker.io/v1/ \
+                              -n rsvp-app \
+                              --dry-run=client -o yaml | kubectl apply -f -
+                              
+                            # Patch the default service account to use this secret for pulling images
+                            kubectl patch serviceaccount default \
+                              -p '{"imagePullSecrets":[{"name":"regcred"}]}' \
+                              -n rsvp-app
+                        '''
+                    }
+                }
+            }
+        }
+
         stage('Update Manifests (GitOps)') {
             steps {
                 script {

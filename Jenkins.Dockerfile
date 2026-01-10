@@ -19,6 +19,11 @@ RUN apt-get update && apt-get install -y unzip && \
     mv terraform /usr/local/bin/ && \
     rm terraform.zip
 
+# Install kubectl
+RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
+    chmod +x kubectl && \
+    mv kubectl /usr/local/bin/
+
 # To avoid permission issues with docker.sock without manual chmod every time,
 # we can add the jenkins user to the docker group if needed, 
 # or use a script to chmod it on startup.
