@@ -97,3 +97,23 @@ resource "null_resource" "argocd_rbac_admin" {
     command = "kubectl create clusterrolebinding argocd-application-controller-admin --clusterrole=cluster-admin --serviceaccount=argo:argocd-application-controller --dry-run=client -o yaml | kubectl apply -f -"
   }
 }
+
+# Prepare Minikube Host (One-time setup for HostPath volumes)
+resource "null_resource" "prepare_minikube_host" {
+  triggers = {
+    always_run = "${timestamp()}"
+  }
+
+  provisioner "local-exec" {
+    # Ensure the HostPath directory exists for the background image volume.
+    # We use a temporary pod to do this since we don't have 'minikube' CLI in the Jenkins container.
+    command = <<-EOT
+      echo "Preparing Minikube host directories via temporary pod..."
+      kubectl delete pod host-prep --ignore-not-found=true
+      kubectl run host-prep --image=busybox --restart=Never --overrides='{"spec": {"containers": [{"name": "host-prep", "image": "busybox", "command": ["sh", "-c", "mkdir -p /host/project/frontend/src/background && chmod 777 /host/project/frontend/src/background"], "volumeMounts": [{"name": "host-root", "mountPath": "/host"}]}], "volumes": [{"name": "host-root", "hostPath": {"path": "/"}}]}}'
+      echo "Waiting for host-prep execution..."
+      sleep 5
+      kubectl delete pod host-prep
+    EOT
+  }
+}
