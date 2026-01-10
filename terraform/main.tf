@@ -81,6 +81,7 @@ resource "null_resource" "install_root_app" {
         sleep 5
       done
       kubectl apply -n argo -f ../k8s/Argo-CD/application.yaml
+      kubectl apply -f ../k8s/ --recursive
     EOT
   }
 }
