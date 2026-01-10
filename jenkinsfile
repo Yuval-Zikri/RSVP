@@ -136,7 +136,8 @@ pipeline {
                 script {
                     withCredentials([
                         usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS'),
-                        file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')
+                        file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG'),
+                        string(credentialsId: 'ngrok-token', variable: 'NGROK_TOKEN')
                     ]) {
                         sh '''
                             # Verify access (optional, but good for debugging)
@@ -151,6 +152,12 @@ pipeline {
                               -n rsvp-app \
                               --dry-run=client -o yaml | kubectl apply -f -
                               
+                            # Create or update ngrok-secret
+                            kubectl create secret opaque ngrok-secret \
+                              --from-literal=NGROK_AUTHTOKEN=$NGROK_TOKEN \
+                              -n rsvp-app \
+                              --dry-run=client -o yaml | kubectl apply -f -
+
                             # Patch the default service account to use this secret for pulling images
                             kubectl patch serviceaccount default \
                               -p '{"imagePullSecrets":[{"name":"regcred"}]}' \

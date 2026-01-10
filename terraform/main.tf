@@ -97,3 +97,15 @@ resource "null_resource" "argocd_rbac_admin" {
     command = "kubectl create clusterrolebinding argocd-application-controller-admin --clusterrole=cluster-admin --serviceaccount=argo:argocd-application-controller --dry-run=client -o yaml | kubectl apply -f -"
   }
 }
+
+# Prepare Minikube Host (One-time setup for HostPath volumes)
+resource "null_resource" "prepare_minikube_host" {
+  triggers = {
+    always_run = "${timestamp()}"
+  }
+
+  provisioner "local-exec" {
+    # Ensure the HostPath directory exists for the background image volume
+    command = "minikube ssh \"sudo mkdir -p /project/frontend/src/background && sudo chmod 777 /project/frontend/src/background\""
+  }
+}
