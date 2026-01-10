@@ -202,14 +202,17 @@ This project uses a modern **GitOps** architecture, meaning the state of the Git
 
 Follow these steps to deploy the stack using the **GitOps workflow**.
 
-#### 1. Infrastructure Bootstrap (Terraform)
+#### 1. Deploy the Infrastructure and Application
 This stage installs the "engines" (Argo CD, Database Operator) and creates the namespaces.
-
+Run Terraform from your local machine (or let Jenkins do it):
 ```bash
 cd terraform
 terraform init
 terraform apply -auto-approve
 ```
+> [!NOTE]
+> **No manual `kubectl apply -f k8s/ --recursive` is needed!**
+> Terraform now installs Argo CD and the "Root Application", which automatically and recursively deploys everything in the `k8s/` directory.
 
 #### 2. One-Time Configuration (Manual)
 Even with automation, you must perform these steps **once** to connect your tools to your specific accounts (GitHub, Docker Hub, etc.).

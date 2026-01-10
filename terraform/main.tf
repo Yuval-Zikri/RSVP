@@ -58,7 +58,7 @@ resource "null_resource" "install_cnpg" {
 
 # Install Root Application (App of Apps) via ArgoCD
 resource "null_resource" "install_root_app" {
-  depends_on = [null_resource.install_argocd]
+  depends_on = [null_resource.argocd_rbac_admin]
 
   triggers = {
     always_run = "${timestamp()}"
