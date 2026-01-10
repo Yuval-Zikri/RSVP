@@ -50,12 +50,10 @@ pipeline {
             steps {
                 dir('terraform') {
                     script {
-                        withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBE_CONFIG_FILE')]) {
-                            withEnv(["KUBECONFIG=${KUBE_CONFIG_FILE}"]) {
-                                // Now both terraform and the local-exec provisioners (kubectl) will use this config
-                                sh "terraform init"
-                                sh "terraform apply -auto-approve"
-                            }
+                        withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBE_CONFIG')]) {
+                            // Point Terraform and kubectl explicitly to the injected config
+                            sh "KUBECONFIG=${KUBE_CONFIG} terraform init"
+                            sh "KUBECONFIG=${KUBE_CONFIG} terraform apply -auto-approve -var='kubeconfig=${KUBE_CONFIG}'"
                         }
                     }
                 }

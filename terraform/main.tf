@@ -7,9 +7,13 @@ terraform {
   }
 }
 
-# Assuming Minikube is running locally and config is in default location
+variable "kubeconfig" {
+  type    = string
+  default = "~/.kube/config"
+}
+
 provider "kubernetes" {
-  # config_path is omitted to allow dynamic detection via KUBECONFIG env var or default location
+  config_path = var.kubeconfig
 }
 
 # Namespace for ArgoCD
