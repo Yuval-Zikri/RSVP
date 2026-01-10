@@ -45,3 +45,11 @@ resource "null_resource" "install_cnpg" {
     command = "kubectl apply --server-side --force-conflicts -f https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/main/releases/cnpg-1.25.0.yaml"
   }
 }
+# Install Root Application (App of Apps) via ArgoCD
+resource "null_resource" "install_root_app" {
+  depends_on = [null_resource.install_argocd]
+
+  provisioner "local-exec" {
+    command = "kubectl apply -n argo -f ../k8s/Argo-CD/application.yaml"
+  }
+}
