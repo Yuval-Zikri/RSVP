@@ -44,10 +44,13 @@ A modern, full-stack application for managing events, invitations, and RSVPs. Bu
 ### DevOps & Tools
 *   ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white) **Docker Compose**
 *   **Kubernetes** (Orchestration)
+*   **Terraform** (Infrastructure as Code - 1-Click Setup)
+*   **ArgoCD** (GitOps Delivery - App-of-Apps Pattern)
 *   **CloudNativePG** (High Availability Database Operator)
 *   **Chaoskube** (Resilience Testing)
 *   **Ngrok** for external tunneling (optional)
 *   **Prometheus** for metrics
+*   **Grafana** for monitoring dashboards
 
 ---
 
@@ -57,8 +60,9 @@ The project is organized for scalability and maintainability:
 
 ```plaintext
 event-manager/
-├── 🐳 docker-compose.yaml     # Local Dev & Test orchestration
-├── 📄 Jenkinsfile             # CI/CD Pipeline Definition
+├── 🐳 docker-compose.yaml     # Local Dev orchestration
+├── 🐳 docker-compose.ci.yaml  # CI-specific orchestration (Image tags for Push)
+├── 📄 Jenkinsfile             # CI/CD Pipeline (Terraform + Docker + GitOps)
 ├── 📄 Jenkins.Dockerfile      # Custom Jenkins Image with Docker CLI
 ├── 📂 terraform/              # Infrastructure as Code (IaC)
 │   ├── 📄 main.tf             # Cluster Setup (Namespaces, ArgoCD)
@@ -186,17 +190,20 @@ The system includes **Chaoskube** to continuously test resilience.
 This project uses a modern **GitOps** architecture, meaning the state of the Git repository is the single source of truth for the Kubernetes cluster.
 
 ### Architecture Overview
-1.  **Infrastructure**: Managed by **Terraform** (Namespaces, ArgoCD installation).
-2.  **Continuous Integration (CI)**: **Jenkins** listens for code changes, runs tests (Docker Compose), builds images, and pushes to Docker Hub.
-3.  **Continuous Deployment (CD)**: **Jenkins** updates the `deployment.yaml` in Git with the new image tag (`v.BUILD_NUMBER`).
-4.  **GitOps Sync**: **ArgoCD** detects the change in Git and automatically syncs the Kubernetes cluster to match the new state.
+1.  **Infrastructure (IaC)**: Managed by **Terraform**. It now bootstraps the entire cluster including Namespaces, **CloudNativePG Operator**, and the **ArgoCD Root Application**.
+2.  **Continuous Integration (CI)**: **Jenkins** listens for code changes.
+    - Runs **Terraform Apply** to ensure infrastructure/operators are up-to-date.
+    - Runs integration/UI tests via Docker Compose.
+    - Builds and pushes images to Docker Hub.
+3.  **Continuous Deployment (CD)**: **Jenkins** updates the manifests in the `deploy` branch.
+4.  **GitOps Sync**: **ArgoCD** (via the App-of-Apps pattern) automatically reconciles the cluster state.
 
 ### 🚀 Setup Guide (GitOps)
 
 Follow these steps to deploy the stack using the **GitOps workflow**.
 
-#### 1. Infrastructure Setup (Terraform)
-We use Terraform to bootstrap the cluster (Create Namespaces `argo`, `rsvp-app` and install ArgoCD).
+#### 1. Infrastructure Bootstrap (Terraform)
+This stage installs the "engines" (Argo CD, Database Operator) and creates the namespaces.
 
 ```bash
 cd terraform
@@ -204,30 +211,33 @@ terraform init
 terraform apply -auto-approve
 ```
 
-#### 2. Configure ArgoCD
-After Terraform finishes:
+#### 2. One-Time Configuration (Manual)
+Even with automation, you must perform these steps **once** to connect your tools to your specific accounts (GitHub, Docker Hub, etc.).
+
+##### **A. Configure ArgoCD**
 1.  **Get Admin Password**:
     ```bash
     (kubectl -n argo get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | 
     ForEach-Object { [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_)) })
-
     ```
 2.  **Access UI**:
     ```bash
     kubectl port-forward svc/argocd-server -n argo 8888:443
     ```
-    Open [https://localhost:8888](https://localhost:8888).
-3.  **Connect Repo**: Go to Settings -> Repositories -> Connect Repo (HTTPS). Use your GitHub credentials/Token.
-4.  The application `rsvp-app` is already created by Terraform/Manifests and should start syncing.
+3.  **Connect Repo**: Log in to [https://localhost:8888](https://localhost:8888), go to Settings -> Repositories -> Connect Repo. (Necessary for ArgoCD to track your fork).
 
-#### 3. Setup Jenkins Pipeline
+##### **B. Setup Jenkins Pipeline**
 1.  **Access Jenkins**: [http://localhost:8080](http://localhost:8080)
 2.  **Create Pipeline**: New Item -> Pipeline -> Definition: "Pipeline script from SCM" -> Git URL.
-3.  **Credentials**: 
+3.  **Inject Credentials**: 
+    Create the following credentials in Jenkins (referenced by `jenkinsfile`):
     *   `docker-hub-credentials` (Username/Password)
     *   `git` (Username / Personal Access Token)
-    *   `gmail-auth` & `ngrok-token` (for tests)
-4.  **Triggers**: The pipeline is configured to **Poll SCM** every 2 minutes (`H/2 * * * *`) or via Webhook.
+    *   `gmail-auth` & `ngrok-token`
+    *   `kubeconfig` (Secret File - see Troubleshooting)
+
+#### 3. Continuous Automation (Commit & Push)
+Once the setup above is done, **everything else is automatic**. Every push to `main` will trigger the full pipeline, infrastructure updates, and GitOps sync.
 
 ---
 
@@ -285,10 +295,22 @@ minikube service grafana     # Dashboard: Backend Monitoring (Auto-provisioned)
 minikube service prometheus  # Targets: Check backend pods discovery
 ```
 
-### 💡 Troubleshooting Common Issues (Manual Deployment)
+### 💡 Troubleshooting Common Issues
 
+*   **ArgoCD stuck in "Progressing" (ngrok)**:
+    This is usually because Minikube's `LoadBalancer` is waiting for an IP. Run:
+    ```bash
+    minikube tunnel
+    ```
+*   **Database Cluster degraded / Primary Missing**:
+    If the CloudNativePG cluster gets out of sync (e.g., after a node restart), perform a "clean slate" recovery:
+    ```bash
+    kubectl delete cluster postgres-cluster -n rsvp-app
+    kubectl delete pvc -n rsvp-app -l cnpg.io/cluster=postgres-cluster
+    # ArgoCD will recreate them correctly starting from Instance 1
+    ```
 *   **ImagePullBackOff (Connection Refused)**:
-    If a pod is stuck pulling an image, try pulling it manually as shown in step 2.
+    If a pod is stuck pulling an image, try pulling it manually: `minikube image pull <image-name>`.
 *   **ContainerCreating (Volume Issues)**:
     If the backend is stuck, ensure the background directory exists inside Minikube:
     ```bash
@@ -300,6 +322,8 @@ minikube service prometheus  # Targets: Check backend pods discovery
     minikube delete
     minikube start
     ```
+*   **Connection Refused in Jenkins (Terraform/Kubectl)**:
+    If you see `dial tcp: connect: connection refused` pointing to `host.docker.internal`, it usually means Minikube's API port has changed. **You must regenerate and re-upload the kubeconfig credential** as described in the "Kubernetes Access (Runtime Injection)" section whenever Minikube restarts.
 
 ---
 
