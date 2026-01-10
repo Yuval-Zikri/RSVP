@@ -54,6 +54,7 @@ resource "null_resource" "install_root_app" {
   depends_on = [null_resource.install_argocd]
 
   provisioner "local-exec" {
-    command = "kubectl apply -n argo -f ../k8s/Argo-CD/application.yaml"
+    # We need to wait for ArgoCD CRDs to be registered before applying the Application
+    command = "sleep 30 && kubectl apply -n argo -f ../k8s/Argo-CD/application.yaml"
   }
 }
