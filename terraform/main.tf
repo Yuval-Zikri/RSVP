@@ -54,16 +54,18 @@ resource "null_resource" "install_root_app" {
 
   provisioner "local-exec" {
     # CRITICAL: We MUST wait for the CRDs to be fully established and the API to recognize them.
-    # We use a loop to wait for the CRD to be recognized by kubectl.
+    # We use a portable while loop because brace expansion ({1..20}) is not supported in all shells (like /bin/sh).
     command = <<-EOT
       echo "Waiting for ArgoCD CRDs..."
-      for i in {1..20}; do
+      count=0
+      while [ $count -lt 20 ]; do
         if kubectl get crd applications.argoproj.io >/dev/null 2>&1; then
           echo "CRD found, waiting for it to be established..."
           kubectl wait --for=condition=established --timeout=60s crd/applications.argoproj.io
           break
         fi
-        echo "Waiting for CRD registration (attempt $i)..."
+        count=$((count + 1))
+        echo "Waiting for CRD registration (attempt $count)..."
         sleep 5
       done
       kubectl apply -n argo -f ../k8s/Argo-CD/application.yaml
