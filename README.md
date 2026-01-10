@@ -322,6 +322,8 @@ minikube service prometheus  # Targets: Check backend pods discovery
     minikube delete
     minikube start
     ```
+*   **Connection Refused in Jenkins (Terraform/Kubectl)**:
+    If you see `dial tcp: connect: connection refused` pointing to `host.docker.internal`, it usually means Minikube's API port has changed. **You must regenerate and re-upload the kubeconfig credential** as described in the "Kubernetes Access (Runtime Injection)" section whenever Minikube restarts.
 
 ---
 

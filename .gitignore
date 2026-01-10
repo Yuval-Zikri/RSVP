@@ -30,3 +30,4 @@ database_status.json
 ngrok_app_status.json
 ngrok_status_ascii.json
 ngrok_status.json
+kubeconfig_for_jenkins
