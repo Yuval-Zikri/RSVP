@@ -105,7 +105,14 @@ resource "null_resource" "prepare_minikube_host" {
   }
 
   provisioner "local-exec" {
-    # Ensure the HostPath directory exists for the background image volume
-    command = "minikube ssh \"sudo mkdir -p /project/frontend/src/background && sudo chmod 777 /project/frontend/src/background\""
+    # Ensure the HostPath directory exists for the background image volume.
+    # We use a temporary pod to do this since we don't have 'minikube' CLI in the Jenkins container.
+    command = <<-EOT
+      echo "Preparing Minikube host directories via temporary pod..."
+      kubectl delete pod host-prep --ignore-not-found=true
+      kubectl run host-prep --image=busybox --restart=Never --overrides='{"spec": {"containers": [{"name": "host-prep", "image": "busybox", "command": ["sh", "-c", "mkdir -p /host/project/frontend/src/background && chmod 777 /host/project/frontend/src/background"], "volumeMounts": [{"name": "host-root", "mountPath": "/host"}]}], "volumes": [{"name": "host-root", "hostPath": {"path": "/"}}]}}'
+      kubectl wait --for=condition=Ready pod/host-prep --timeout=60s
+      kubectl delete pod host-prep
+    EOT
   }
 }
