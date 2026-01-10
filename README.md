@@ -273,8 +273,11 @@ Even with automation, you must perform these steps **once** to connect your tool
     Create the following credentials in Jenkins (referenced by `jenkinsfile`):
     *   `docker-hub-credentials` (Username/Password)
     *   `git` (Username / Personal Access Token)
-    *   `gmail-auth` & `ngrok-token`
+    *   `gmail-auth` & `ngrok-token` (Secret Text)
     *   `kubeconfig` (Secret File - see Troubleshooting)
+    
+    > [!NOTE]
+    > **Automatic Secret Injection**: Sensitive secrets like `ngrok-token` and `regcred` (Docker Hub) are **not stored in Git**. Jenkins automatically injects them into Kubernetes after ArgoCD syncs the manifests, ensuring secrets remain secure and up-to-date.
 
 #### 3. Continuous Automation (Commit & Push)
 Once the setup above is done, **everything else is automatic**. Every push to `main` will trigger the full pipeline, infrastructure updates, and GitOps sync.
