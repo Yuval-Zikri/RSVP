@@ -111,7 +111,8 @@ resource "null_resource" "prepare_minikube_host" {
       echo "Preparing Minikube host directories via temporary pod..."
       kubectl delete pod host-prep --ignore-not-found=true
       kubectl run host-prep --image=busybox --restart=Never --overrides='{"spec": {"containers": [{"name": "host-prep", "image": "busybox", "command": ["sh", "-c", "mkdir -p /host/project/frontend/src/background && chmod 777 /host/project/frontend/src/background"], "volumeMounts": [{"name": "host-root", "mountPath": "/host"}]}], "volumes": [{"name": "host-root", "hostPath": {"path": "/"}}]}}'
-      kubectl wait --for=condition=Ready pod/host-prep --timeout=60s
+      echo "Waiting for host-prep execution..."
+      sleep 5
       kubectl delete pod host-prep
     EOT
   }

@@ -153,7 +153,7 @@ pipeline {
                               --dry-run=client -o yaml | kubectl apply -f -
                               
                             # Create or update ngrok-secret
-                            kubectl create secret opaque ngrok-secret \
+                            kubectl create secret generic ngrok-secret \
                               --from-literal=NGROK_AUTHTOKEN=$NGROK_TOKEN \
                               -n rsvp-app \
                               --dry-run=client -o yaml | kubectl apply -f -
