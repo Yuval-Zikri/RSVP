@@ -84,3 +84,17 @@ resource "null_resource" "install_root_app" {
     EOT
   }
 }
+
+# Patch ArgoCD ClusterRole for K8s 1.28+ compatibility
+# (Adds missing permissions for ValidatingAdmissionPolicyBinding)
+resource "null_resource" "patch_argocd_rbac" {
+  depends_on = [null_resource.install_argocd]
+
+  triggers = {
+    always_run = "${timestamp()}"
+  }
+
+  provisioner "local-exec" {
+    command = "kubectl patch clusterrole argocd-application-controller --type='json' -p='[{\"op\": \"add\", \"path\": \"/rules/-\", \"value\": {\"apiGroups\": [\"admissionregistration.k8s.io\"], \"resources\": [\"validatingadmissionpolicybindings\"], \"verbs\": [\"list\", \"watch\"]}}]' || echo 'Patch already applied or failed'"
+  }
+}

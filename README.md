@@ -324,6 +324,11 @@ minikube service prometheus  # Targets: Check backend pods discovery
     ```
 *   **Connection Refused in Jenkins (Terraform/Kubectl)**:
     If you see `dial tcp: connect: connection refused` pointing to `host.docker.internal`, it usually means Minikube's API port has changed. **You must regenerate and re-upload the kubeconfig credential** as described in the "Kubernetes Access (Runtime Injection)" section whenever Minikube restarts.
+*   **ArgoCD ComparisonError (RBAC/Forbidden)**:
+    If you see `User ... cannot list resource "validatingadmissionpolicybindings"`, run this patch to fix compatibility with K8s 1.28+:
+    ```bash
+    kubectl patch clusterrole argocd-application-controller --type='json' -p='[{"op": "add", "path": "/rules/-", "value": {"apiGroups": ["admissionregistration.k8s.io"], "resources": ["validatingadmissionpolicybindings"], "verbs": ["list", "watch"]}}]'
+    ```
 
 ---
 
