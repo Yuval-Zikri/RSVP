@@ -397,6 +397,23 @@ docker compose version
 6. ID: `ngrok-token`
 7. Secret: Your [ngrok Authtoken](https://dashboard.ngrok.com/get-started/your-authtoken).
 
+### 5. Kubernetes Access (Runtime Injection)
+To allow Jenkins to deploy to your Minikube cluster, you must provide a "portable" kubeconfig file as a credential.
+
+1.  **Generate Portable Config (One-Liner)**:
+    Run this specific command in PowerShell. It flattens the local config, changes the IP to `host.docker.internal`, and disables TLS verification so it works inside the Jenkins container:
+    ```powershell
+    kubectl config view --flatten --minify | ForEach-Object { $_ -replace '127.0.0.1','host.docker.internal' -replace 'localhost','host.docker.internal' -replace 'certificate-authority-data:.*','insecure-skip-tls-verify: true' } | Out-File -Encoding ASCII kubeconfig_for_jenkins
+    ```
+    *This creates a file named `kubeconfig_for_jenkins` in your current folder.*
+
+2.  **Upload to Jenkins**:
+    *   Go to **Manage Jenkins** > **Credentials** > **Add Credentials**.
+    *   **Kind**: `Secret File`.
+    *   **File**: Upload the `kubeconfig_for_jenkins` file.
+    *   **ID**: `kubeconfig`.
+    *   **Description**: `Minikube Config for Jenkins`.
+
 ---
 
 ## 🧪 Testing

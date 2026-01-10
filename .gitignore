@@ -21,3 +21,4 @@ postgres_logs_utf8.txt
 postgres_logs.txt
 prometheus_deploy.txt
 prometheus_rs.txt
+kubeconfig_portable_fixed
