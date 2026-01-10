@@ -131,6 +131,60 @@ pipeline {
             }
         }
 
+        stage('Update Manifests (GitOps)') {
+            steps {
+                script {
+                    // Requires 'git' with username (git user) and password (PAT)
+                    withCredentials([usernamePassword(credentialsId: 'git', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
+                        sh """
+                            git config user.email "jenkins@example.com"
+                            git config user.name "Jenkins"
+                            
+                            # Update remote origin with credentials
+                            git remote set-url origin https://${GIT_USER}:${GIT_PASS}@github.com/Yuval-Zikri/RSVP.git
+                            
+                            # Checkout deploy branch
+                            git fetch origin deploy
+                            git checkout -f deploy
+                            
+                            # Merge main into deploy (to get latest k8s/ structure changes if any)
+                            # Using -X theirs to prefer main changes in conflicts given we overwrite manifest images anyway
+                            git merge origin/main --allow-unrelated-histories -X theirs
+                            
+                            # Replace the tag in the deployment files
+                            # We use sed to search and replace the image tag
+                            sed -i 's|image: event-manager-backend:latest|image: yuvalzikri/rsvp-backend:v.${BUILD_NUMBER}|g' k8s/backend/deployment.yaml
+                            sed -i 's|image: yuvalzikri/rsvp-backend:.*|image: yuvalzikri/rsvp-backend:v.${BUILD_NUMBER}|g' k8s/backend/deployment.yaml
+                            
+                            sed -i 's|image: event-manager-frontend:latest|image: yuvalzikri/rsvp-frontend:v.${BUILD_NUMBER}|g' k8s/frontend/deployment.yaml
+                            sed -i 's|image: yuvalzikri/rsvp-frontend:.*|image: yuvalzikri/rsvp-frontend:v.${BUILD_NUMBER}|g' k8s/frontend/deployment.yaml
+                            
+                            git add k8s/backend/deployment.yaml k8s/frontend/deployment.yaml
+                            git commit -m "Update image version to v.${BUILD_NUMBER} [skip ci]"
+                            
+                            git push https://${GIT_USER}:${GIT_PASS}@github.com/Yuval-Zikri/RSVP.git deploy
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Wait for ArgoCD Sync') {
+            steps {
+                script {
+                    withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
+                        sh '''
+                            echo "Waiting for ArgoCD to sync the new manifests..."
+                            sleep 30
+                            
+                            # Check ArgoCD sync status (optional, for debugging)
+                            kubectl get application -n argo || true
+                        '''
+                    }
+                }
+            }
+        }
+
         stage('Inject Secrets to K8s') {
             steps {
                 script {
@@ -182,44 +236,6 @@ EOF
                               -p '{"imagePullSecrets":[{"name":"regcred"}]}' \
                               -n rsvp-app
                         '''
-                    }
-                }
-            }
-        }
-
-        stage('Update Manifests (GitOps)') {
-            steps {
-                script {
-                    // Requires 'git' with username (git user) and password (PAT)
-                    withCredentials([usernamePassword(credentialsId: 'git', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
-                        sh """
-                            git config user.email "jenkins@example.com"
-                            git config user.name "Jenkins"
-                            
-                            # Update remote origin with credentials
-                            git remote set-url origin https://${GIT_USER}:${GIT_PASS}@github.com/Yuval-Zikri/RSVP.git
-                            
-                            # Checkout deploy branch
-                            git fetch origin deploy
-                            git checkout -f deploy
-                            
-                            # Merge main into deploy (to get latest k8s/ structure changes if any)
-                            # Using -X theirs to prefer main changes in conflicts given we overwrite manifest images anyway
-                            git merge origin/main --allow-unrelated-histories -X theirs
-                            
-                            # Replace the tag in the deployment files
-                            # We use sed to search and replace the image tag
-                            sed -i 's|image: event-manager-backend:latest|image: yuvalzikri/rsvp-backend:v.${BUILD_NUMBER}|g' k8s/backend/deployment.yaml
-                            sed -i 's|image: yuvalzikri/rsvp-backend:.*|image: yuvalzikri/rsvp-backend:v.${BUILD_NUMBER}|g' k8s/backend/deployment.yaml
-                            
-                            sed -i 's|image: event-manager-frontend:latest|image: yuvalzikri/rsvp-frontend:v.${BUILD_NUMBER}|g' k8s/frontend/deployment.yaml
-                            sed -i 's|image: yuvalzikri/rsvp-frontend:.*|image: yuvalzikri/rsvp-frontend:v.${BUILD_NUMBER}|g' k8s/frontend/deployment.yaml
-                            
-                            git add k8s/backend/deployment.yaml k8s/frontend/deployment.yaml
-                            git commit -m "Update image version to v.${BUILD_NUMBER} [skip ci]"
-                            
-                            git push https://${GIT_USER}:${GIT_PASS}@github.com/Yuval-Zikri/RSVP.git deploy
-                        """
                     }
                 }
             }
