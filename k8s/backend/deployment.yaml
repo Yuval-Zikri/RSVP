@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: yuvalzikri/rsvp-backend:v.62
+          image: yuvalzikri/rsvp-backend:v.71
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5000
