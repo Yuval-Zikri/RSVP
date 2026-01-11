@@ -6,9 +6,19 @@ metadata:
 spec:
   instances: 3
 
-  # Basic storage configuration
+  # Automatic failover when primary pod is killed
+  primaryUpdateStrategy: unsupervised
+
+  # Storage with Minikube's standard StorageClass
   storage:
     size: 1Gi
+    storageClass: standard
+
+  # PostgreSQL settings for HA
+  postgresql:
+    parameters:
+      # Ensure data is replicated to replicas before commit returns
+      synchronous_commit: "on"
 
   # Bootstrap configuration (initial database creation)
   bootstrap:
