@@ -1,36 +1,47 @@
 import os
 from dotenv import load_dotenv
-
 load_dotenv()
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail
-from prometheus_client import make_wsgi_app
+from prometheus_client import make_wsgi_app, Counter, Histogram
+import time
+from flask import g
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 from extensions import db, mail, migrate
-
-# Initialize Extensions
-# db and mail are imported from extensions.py
-
 from config import Config
 
 def create_app():
     app = Flask(__name__)
-    
-    # Configuration
     app.config.from_object(Config)
-    
-    # Initialize Plugins
     CORS(app)
     db.init_app(app)
     mail.init_app(app)
     migrate.init_app(app, db)
-    
-    # Prometheus Metrics
+    REQUEST_COUNT = Counter('http_requests_total', 'Total HTTP requests', ['method', 'endpoint', 'http_status'])
+    REQUEST_LATENCY = Histogram('http_request_duration_seconds', 'HTTP request latency seconds', ['method', 'endpoint'])
+
     app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {
         '/metrics': make_wsgi_app()
     })
+
+    @app.before_request
+    def _prom_before_request():
+        g._prom_start_time = time.time()
+
+    @app.after_request
+    def _prom_after_request(response):
+        try:
+            start = getattr(g, '_prom_start_time', None)
+            if start is not None:
+                latency = time.time() - start
+                endpoint = request.endpoint or request.path
+                REQUEST_LATENCY.labels(request.method, endpoint).observe(latency)
+                REQUEST_COUNT.labels(request.method, endpoint, str(response.status_code)).inc()
+        except Exception:
+            pass
+        return response
     
     
     # Register Blueprints
