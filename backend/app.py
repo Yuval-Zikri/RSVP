@@ -6,7 +6,9 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail
-from prometheus_client import make_wsgi_app
+from prometheus_client import make_wsgi_app, Counter, Histogram
+import time
+from flask import g
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 from extensions import db, mail, migrate
 
@@ -28,9 +30,30 @@ def create_app():
     migrate.init_app(app, db)
     
     # Prometheus Metrics
+    # HTTP instrumentation metrics
+    REQUEST_COUNT = Counter('http_requests_total', 'Total HTTP requests', ['method', 'endpoint', 'http_status'])
+    REQUEST_LATENCY = Histogram('http_request_duration_seconds', 'HTTP request latency seconds', ['method', 'endpoint'])
+
     app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {
         '/metrics': make_wsgi_app()
     })
+
+    @app.before_request
+    def _prom_before_request():
+        g._prom_start_time = time.time()
+
+    @app.after_request
+    def _prom_after_request(response):
+        try:
+            start = getattr(g, '_prom_start_time', None)
+            if start is not None:
+                latency = time.time() - start
+                endpoint = request.endpoint or request.path
+                REQUEST_LATENCY.labels(request.method, endpoint).observe(latency)
+                REQUEST_COUNT.labels(request.method, endpoint, str(response.status_code)).inc()
+        except Exception:
+            pass
+        return response
     
     
     # Register Blueprints

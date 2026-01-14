@@ -30,7 +30,7 @@ except Exception as e:
 SERVICE_NAMESPACE = os.environ.get("SERVICE_NAMESPACE", "default")
 PORTFORWARDS = [
     ("prometheus", "9090:9090"),
-    ("grafana", "3000:3000"),
+    ("grafana", "3001:3001"),
 ]
 
 _procs: Dict[str, subprocess.Popen] = {}
