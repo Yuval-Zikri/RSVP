@@ -19,7 +19,7 @@ spec:
     parameters:
       # Ensure data is replicated to replicas before commit returns
       synchronous_commit: "on"
-    minSyncReplicas: 1
+  minSyncReplicas: 1
 
   # Bootstrap configuration (initial database creation)
   bootstrap:
