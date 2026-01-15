@@ -2,6 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: prometheus-config
+  namespace: rsvp-app
 data:
   prometheus.yml: |
     global:
@@ -69,6 +70,10 @@ data:
         - source_labels: [__meta_kubernetes_pod_name]
           action: keep
           regex: postgres-cluster.*
+        # Only scrape the 'metrics' port specifically named by CNPG
+        - source_labels: [__meta_kubernetes_pod_container_port_name]
+          action: keep
+          regex: metrics
         - source_labels: [__meta_kubernetes_namespace]
           target_label: kubernetes_namespace
         - source_labels: [__meta_kubernetes_pod_name]
@@ -82,9 +87,14 @@ data:
         kubernetes_sd_configs:
         - role: pod
         relabel_configs:
+        # Only scrape pods with prometheus.io/scrape=true
         - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
           action: keep
           regex: true
+        # Exclude postgres pods from this job as they are handled above
+        - source_labels: [__meta_kubernetes_pod_name]
+          action: drop
+          regex: postgres-cluster.*
         - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
           action: replace
           target_label: __metrics_path__
@@ -97,16 +107,12 @@ data:
         - action: labelmap
           regex: __meta_kubernetes_pod_label_(.+)
         - source_labels: [__meta_kubernetes_namespace]
-          action: replace
           target_label: kubernetes_namespace
         - source_labels: [__meta_kubernetes_pod_name]
-          action: replace
           target_label: kubernetes_pod_name
-        # Set job label from app label, or deployment name
+        # Set job label from app label
         - source_labels: [__meta_kubernetes_pod_label_app]
           target_label: job
-          regex: (.+)
-          replacement: $1
           
       - job_name: 'kube-state-metrics'
         static_configs:
