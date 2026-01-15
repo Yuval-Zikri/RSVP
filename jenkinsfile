@@ -50,10 +50,19 @@ pipeline {
             steps {
                 dir('terraform') {
                     script {
-                        withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBE_CONFIG')]) {
-                            // Point Terraform and kubectl explicitly to the injected config
-                            sh "KUBECONFIG=${KUBE_CONFIG} terraform init"
-                            sh "KUBECONFIG=${KUBE_CONFIG} terraform apply -auto-approve -var='kubeconfig=${KUBE_CONFIG}'"
+                        withCredentials([file(credentialsId: 'kubeconfig', variable: 'ORIG_KUBE_CONFIG')]) {
+                            // Fix the kubeconfig being passed in:
+                            // 1. Replace 127.0.0.1 with host.docker.internal (to access host minikube from container)
+                            // 2. Remove certificate-authority-data and use insecure-skip-tls-verify (to bypass SAN mismatch for host.docker.internal)
+                            sh """
+                                sed -e 's|server: https://127.0.0.1|server: https://host.docker.internal|g' \\
+                                    -e 's|certificate-authority-data: .*|insecure-skip-tls-verify: true|g' \\
+                                    "\$ORIG_KUBE_CONFIG" > kubeconfig_fixed
+                            """
+                            
+                            // Point Terraform and kubectl explicitly to the FIXED config
+                            sh "KUBECONFIG=kubeconfig_fixed terraform init"
+                            sh "KUBECONFIG=kubeconfig_fixed terraform apply -auto-approve -var='kubeconfig=kubeconfig_fixed'"
                         }
                     }
                 }
