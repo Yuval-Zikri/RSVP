@@ -248,6 +248,7 @@ data:
           ],
           "title": "Traffic Breakdown",
           "type": "timeseries"
+        },
         {
           "datasource": { "uid": "prometheus" },
           "gridPos": { "h": 5, "w": 6, "x": 0, "y": 25 },
