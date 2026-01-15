@@ -31,3 +31,5 @@ ngrok_app_status.json
 ngrok_status_ascii.json
 ngrok_status.json
 kubeconfig_for_jenkins
+kubeconfig_test
+kubeconfig_for_jenkins2
