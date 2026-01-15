@@ -52,11 +52,10 @@ pipeline {
                     script {
                         withCredentials([file(credentialsId: 'kubeconfig', variable: 'ORIG_KUBE_CONFIG')]) {
                             // Fix the kubeconfig being passed in:
-                            // 1. Get Minikube IP and replace 127.0.0.1 with it (Jenkins \u0026 Minikube both in Docker)
-                            // 2. Remove certificate-authority-data and use insecure-skip-tls-verify
+                            // 1. Replace 127.0.0.1 with host.docker.internal (to access host minikube from container)
+                            // 2. Remove certificate-authority-data and use insecure-skip-tls-verify (to bypass SAN mismatch for host.docker.internal)
                             sh """
-                                MINIKUBE_IP=\$(minikube ip)
-                                sed -e "s|server: https://127.0.0.1|server: https://\${MINIKUBE_IP}|g" \\
+                                sed -e 's|server: https://127.0.0.1|server: https://host.docker.internal|g' \\
                                     -e 's|certificate-authority-data: .*|insecure-skip-tls-verify: true|g' \\
                                     "\$ORIG_KUBE_CONFIG" > kubeconfig_fixed
                             """
