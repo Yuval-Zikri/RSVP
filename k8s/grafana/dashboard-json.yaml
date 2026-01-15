@@ -188,7 +188,7 @@ data:
           "targets": [
             {
               "datasource": { "uid": "prometheus" },
-              "expr": "sum by(pod) (rate(container_cpu_usage_seconds_total{image!=\"\", namespace=\"rsvp-app\", container!=\"POD\", container!=\"\"}[5m])) or vector(0)",
+              "expr": "sum by(pod) (rate(container_cpu_usage_seconds_total{namespace=\"rsvp-app\", container=\"\"}[5m])) or vector(0)",
               "legendFormat": "{{pod}}",
               "refId": "A"
             }
@@ -204,7 +204,7 @@ data:
           "targets": [
             {
               "datasource": { "uid": "prometheus" },
-              "expr": "sum by(pod) (container_memory_working_set_bytes{image!=\"\", namespace=\"rsvp-app\", container!=\"POD\", container!=\"\"}) or vector(0)",
+              "expr": "sum by(pod) (container_memory_working_set_bytes{namespace=\"rsvp-app\", container=\"\"}) or vector(0)",
               "legendFormat": "{{pod}}",
               "refId": "A"
             }
