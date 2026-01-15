@@ -143,13 +143,13 @@ resource "null_resource" "port_forwarding" {
       # ArgoCD (8888 -> 443)
       powershell -Command "Start-Process kubectl -ArgumentList 'port-forward svc/argocd-server -n argo 8888:443' -WindowStyle Hidden"
       
-      # Grafana (3000 -> 80)
-      powershell -Command "Start-Process kubectl -ArgumentList 'port-forward svc/grafana -n rsvp-app 3000:80' -WindowStyle Hidden"
+      # Grafana (3001 -> 80)
+      powershell -Command "Start-Process kubectl -ArgumentList 'port-forward svc/grafana -n rsvp-app 3001:80' -WindowStyle Hidden"
       
       # Backend (5000 -> 5000)
       powershell -Command "Start-Process kubectl -ArgumentList 'port-forward svc/backend -n rsvp-app 5000:5000' -WindowStyle Hidden"
       
-      echo "Port-forwards started: ArgoCD (8888), Grafana (3000), Backend (5000)"
+      echo "Port-forwards started: ArgoCD (8888), Grafana (3001), Backend (5000)"
     EOT
   }
 }
