@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: yuvalzikri/rsvp-frontend:v.145
+          image: yuvalzikri/rsvp-frontend:v.146
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
