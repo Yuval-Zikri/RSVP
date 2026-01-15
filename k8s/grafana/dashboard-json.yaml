@@ -115,11 +115,11 @@ data:
             "colorMode": "value",
             "graphMode": "area",
             "justifyMode": "auto",
-            "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false }
+            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
           },
           "targets": [
             {
-              "expr": "sum(increase(events_created_total[1h])) or vector(0)",
+              "expr": "round(sum(increase(events_created_total[1h]))) or vector(0)",
               "legendFormat": "Events Created",
               "refId": "A"
             }
@@ -134,11 +134,11 @@ data:
           "options": {
             "colorMode": "value",
             "graphMode": "area",
-            "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false }
+            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
           },
           "targets": [
             {
-              "expr": "sum(increase(invitations_sent_total[1h])) or vector(0)",
+              "expr": "round(sum(increase(invitations_sent_total[1h]))) or vector(0)",
               "legendFormat": "Invites Sent",
               "refId": "A"
             }
@@ -153,11 +153,11 @@ data:
           "options": {
             "colorMode": "value",
             "graphMode": "area",
-            "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false }
+            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
           },
           "targets": [
             {
-              "expr": "sum(increase(rsvps_submitted_total[1h])) or vector(0)",
+              "expr": "round(sum(increase(rsvps_submitted_total[1h]))) or vector(0)",
               "legendFormat": "RSVPs",
               "refId": "A"
             }
@@ -248,6 +248,35 @@ data:
           ],
           "title": "Traffic Breakdown",
           "type": "timeseries"
+        {
+          "datasource": { "uid": "prometheus" },
+          "gridPos": { "h": 5, "w": 6, "x": 0, "y": 25 },
+          "id": 60,
+          "options": { "colorMode": "value", "reduceOptions": { "calcs": ["sum"] } },
+          "targets": [
+            {
+              "expr": "sum(increase(email_errors_total[1h])) or vector(0)",
+              "legendFormat": "Email Failures",
+              "refId": "A"
+            }
+          ],
+          "title": "Email Delivery Errors (Last Hour)",
+          "type": "stat"
+        },
+        {
+          "datasource": { "uid": "prometheus" },
+          "gridPos": { "h": 5, "w": 6, "x": 6, "y": 25 },
+          "id": 61,
+          "options": { "colorMode": "value", "reduceOptions": { "calcs": ["sum"] } },
+          "targets": [
+            {
+              "expr": "sum(increase(location_searches_total[1h])) or vector(0)",
+              "legendFormat": "Searches",
+              "refId": "A"
+            }
+          ],
+          "title": "Location Search Volume (Last Hour)",
+          "type": "stat"
         }
       ],
       "refresh": "10s",

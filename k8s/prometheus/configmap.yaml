@@ -67,10 +67,12 @@ data:
             names:
             - rsvp-app
         relabel_configs:
-        - source_labels: [__meta_kubernetes_pod_name]
+        # Match only CNPG cluster pods using labels
+        - source_labels: [__meta_kubernetes_pod_label_cnpg_io_cluster]
           action: keep
-          regex: postgres-cluster.*
-        # Only scrape the 'metrics' port specifically named by CNPG
+          regex: postgres-cluster
+        # CRITICAL: Keep ONLY the target where port name is 'metrics'
+        # This prevents redundant targets on 5432, 8000, etc.
         - source_labels: [__meta_kubernetes_pod_container_port_name]
           action: keep
           regex: metrics
