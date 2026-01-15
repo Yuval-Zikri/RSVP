@@ -111,6 +111,9 @@ data:
           "datasource": { "uid": "prometheus" },
           "gridPos": { "h": 5, "w": 8, "x": 0, "y": 7 },
           "id": 31,
+          "fieldConfig": {
+            "defaults": { "decimals": 0 }
+          },
           "options": {
             "colorMode": "value",
             "graphMode": "area",
@@ -119,7 +122,7 @@ data:
           },
           "targets": [
             {
-              "expr": "round(sum(increase(events_created_total[1h]))) or vector(0)",
+              "expr": "round(sum(increase(http_requests_total{job=\"backend\", endpoint=\"events.events_crud.create_event\", http_status=\"201\"}[1h]))) or vector(0)",
               "legendFormat": "Events Created",
               "refId": "A"
             }
@@ -131,6 +134,9 @@ data:
           "datasource": { "uid": "prometheus" },
           "gridPos": { "h": 5, "w": 8, "x": 8, "y": 7 },
           "id": 32,
+          "fieldConfig": {
+            "defaults": { "decimals": 0 }
+          },
           "options": {
             "colorMode": "value",
             "graphMode": "area",
@@ -138,7 +144,7 @@ data:
           },
           "targets": [
             {
-              "expr": "round(sum(increase(invitations_sent_total[1h]))) or vector(0)",
+              "expr": "round(sum(increase(http_requests_total{job=\"backend\", endpoint=\"invitations.send_invitations\", http_status=\"201\"}[1h]))) or vector(0)",
               "legendFormat": "Invites Sent",
               "refId": "A"
             }
@@ -150,6 +156,9 @@ data:
           "datasource": { "uid": "prometheus" },
           "gridPos": { "h": 5, "w": 8, "x": 16, "y": 7 },
           "id": 33,
+          "fieldConfig": {
+            "defaults": { "decimals": 0 }
+          },
           "options": {
             "colorMode": "value",
             "graphMode": "area",
@@ -157,7 +166,7 @@ data:
           },
           "targets": [
             {
-              "expr": "round(sum(increase(rsvps_submitted_total[1h]))) or vector(0)",
+              "expr": "round(sum(increase(http_requests_total{job=\"backend\", endpoint=\"rsvp.update_rsvp\", http_status=\"200\"}[1h]))) or vector(0)",
               "legendFormat": "RSVPs",
               "refId": "A"
             }
@@ -207,7 +216,13 @@ data:
           "datasource": { "uid": "prometheus" },
           "gridPos": { "h": 5, "w": 6, "x": 0, "y": 20 },
           "id": 11,
-          "options": { "colorMode": "value", "reduceOptions": { "calcs": ["lastNotNull"] } },
+          "options": {
+            "colorMode": "value",
+            "reduceOptions": { "calcs": ["lastNotNull"] }
+          },
+          "fieldConfig": {
+            "defaults": { "decimals": 0 }
+          },
           "targets": [
             {
               "datasource": { "uid": "prometheus" },
@@ -223,7 +238,13 @@ data:
           "datasource": { "uid": "prometheus" },
           "gridPos": { "h": 5, "w": 6, "x": 6, "y": 20 },
           "id": 40,
-          "options": { "colorMode": "value", "reduceOptions": { "calcs": ["sum"] } },
+          "options": {
+            "colorMode": "value",
+            "reduceOptions": { "calcs": ["sum"] }
+          },
+          "fieldConfig": {
+            "defaults": { "decimals": 0 }
+          },
           "targets": [
             {
               "expr": "sum(kube_pod_container_status_restarts_total{namespace=\"rsvp-app\"}) or vector(0)",
@@ -253,10 +274,18 @@ data:
           "datasource": { "uid": "prometheus" },
           "gridPos": { "h": 5, "w": 6, "x": 0, "y": 25 },
           "id": 60,
-          "options": { "colorMode": "value", "reduceOptions": { "calcs": ["sum"] } },
+          "fieldConfig": {
+            "defaults": { "decimals": 0 }
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+          },
           "targets": [
             {
-              "expr": "sum(increase(email_errors_total[1h])) or vector(0)",
+              "expr": "round(sum(increase(email_errors_total[1h]))) or vector(0)",
               "legendFormat": "Email Failures",
               "refId": "A"
             }
@@ -268,15 +297,46 @@ data:
           "datasource": { "uid": "prometheus" },
           "gridPos": { "h": 5, "w": 6, "x": 6, "y": 25 },
           "id": 61,
-          "options": { "colorMode": "value", "reduceOptions": { "calcs": ["sum"] } },
+          "fieldConfig": {
+            "defaults": { "decimals": 0 }
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+          },
           "targets": [
             {
-              "expr": "sum(increase(location_searches_total[1h])) or vector(0)",
+              "expr": "round(sum(increase(http_requests_total{job=\"backend\", endpoint=~\"locations.search_location_route|/api/search-location\", http_status=\"200\"}[1h]))) or vector(0)",
               "legendFormat": "Searches",
               "refId": "A"
             }
           ],
           "title": "Location Search Volume (Last Hour)",
+          "type": "stat"
+        },
+        {
+          "datasource": { "uid": "prometheus" },
+          "gridPos": { "h": 5, "w": 6, "x": 12, "y": 25 },
+          "id": 62,
+          "fieldConfig": {
+            "defaults": { "decimals": 0, "color": { "mode": "fixed", "fixedColor": "red" } }
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+          },
+          "targets": [
+            {
+              "expr": "round(sum(increase(database_errors_total[1h]))) or vector(0)",
+              "legendFormat": "DB Errors",
+              "refId": "A"
+            }
+          ],
+          "title": "Database Errors (Last Hour)",
           "type": "stat"
         }
       ],
@@ -286,8 +346,8 @@ data:
       "tags": ["rsvp", "kubernetes", "professional"],
       "templating": { "list": [] },
       "time": { "from": "now-30m", "to": "now" },
-      "title": "RSVP System Monitor v2",
+      "title": "RSVP System Monitor v6",
       "uid": "rsvp-system-monitor",
-      "version": 3,
+      "version": 7,
       "weekStart": ""
     }
