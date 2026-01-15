@@ -34,6 +34,9 @@ def send_invitation_email(event, guest, base_url):
         print(f"Email sent to {guest['email']}")
         return True
     except Exception as e:
+        from flask import current_app
+        if hasattr(current_app, 'metrics'):
+            current_app.metrics['email_errors'].inc()
         print(f"Failed to send email to {guest['email']}: {e}")
         return False
 
@@ -66,6 +69,9 @@ def send_reminder_email(event, invitation, base_url):
         print(f"Reminder sent to {invitation.email}")
         return True
     except Exception as e:
+        from flask import current_app
+        if hasattr(current_app, 'metrics'):
+            current_app.metrics['email_errors'].inc()
         print(f"Failed to send reminder to {invitation.email}: {e}")
         return False
 
@@ -99,5 +105,8 @@ def send_updated_invitation_email(event, invitation, base_url):
         print(f"Resent invitation to {invitation.email}")
         return True
     except Exception as e:
+        from flask import current_app
+        if hasattr(current_app, 'metrics'):
+            current_app.metrics['email_errors'].inc()
         print(f"Failed to resend email to {invitation.email}: {e}")
         return False

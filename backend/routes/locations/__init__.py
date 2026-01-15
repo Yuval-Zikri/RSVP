@@ -14,6 +14,11 @@ def search_location_route():
         return jsonify([]), 200
     
     results = search_location(query)
+    
+    from flask import current_app
+    if hasattr(current_app, 'metrics'):
+        current_app.metrics['location_searches'].inc()
+        
     return jsonify(results), 200
 
 

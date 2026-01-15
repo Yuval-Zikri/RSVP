@@ -12,6 +12,22 @@ from werkzeug.middleware.dispatcher import DispatcherMiddleware
 from extensions import db, mail, migrate
 from config import Config
 
+# Global Metrics Definitions
+REQUEST_COUNT = Counter('http_requests_total', 'Total HTTP requests', ['method', 'endpoint', 'http_status'])
+REQUEST_LATENCY = Histogram('http_request_duration_seconds', 'HTTP request latency seconds', ['method', 'endpoint'])
+
+# Business Metrics
+EVENTS_CREATED = Counter('events_created_total', 'Total number of events created')
+RSVPS_SUBMITTED = Counter('rsvps_submitted_total', 'Total number of RSVPs submitted', ['status'])
+INVITATIONS_SENT = Counter('invitations_sent_total', 'Total number of invitations sent')
+DATABASE_ERRORS = Counter('database_errors_total', 'Total number of database errors')
+EMAIL_ERRORS = Counter('email_errors_total', 'Total number of email sending failures')
+LOCATION_SEARCHES = Counter('location_searches_total', 'Total number of location searches performed')
+
+# Pre-initialize labels to 0
+for status in ['attending', 'not_attending']:
+    RSVPS_SUBMITTED.labels(status=status).inc(0)
+
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
@@ -19,15 +35,7 @@ def create_app():
     db.init_app(app)
     mail.init_app(app)
     migrate.init_app(app, db)
-    REQUEST_COUNT = Counter('http_requests_total', 'Total HTTP requests', ['method', 'endpoint', 'http_status'])
-    REQUEST_LATENCY = Histogram('http_request_duration_seconds', 'HTTP request latency seconds', ['method', 'endpoint'])
     
-    # Business Metrics
-    EVENTS_CREATED = Counter('events_created_total', 'Total number of events created')
-    RSVPS_SUBMITTED = Counter('rsvps_submitted_total', 'Total number of RSVPs submitted', ['status'])
-    INVITATIONS_SENT = Counter('invitations_sent_total', 'Total number of invitations sent')
-    DATABASE_ERRORS = Counter('database_errors_total', 'Total number of database errors')
-
     app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {
         '/metrics': make_wsgi_app()
     })
@@ -37,7 +45,9 @@ def create_app():
         'events_created': EVENTS_CREATED,
         'rsvps_submitted': RSVPS_SUBMITTED,
         'invitations_sent': INVITATIONS_SENT,
-        'database_errors': DATABASE_ERRORS
+        'database_errors': DATABASE_ERRORS,
+        'email_errors': EMAIL_ERRORS,
+        'location_searches': LOCATION_SEARCHES
     }
 
     @app.before_request
