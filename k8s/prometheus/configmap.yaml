@@ -96,26 +96,26 @@ data:
           target_label: __address__
         - action: labelmap
           regex: __meta_kubernetes_pod_label_(.+)
-        # Keep specific pods we care about
-        - source_labels: [__meta_kubernetes_pod_name]
-          action: keep
-          regex: '^(grafana|prometheus|frontend|backend|postgres.*|jenkins|ngrok|chaoskube).*$'
-        - source_labels: [__meta_kubernetes_namespace]
-          action: keep
-          regex: rsvp-app|default
         - source_labels: [__meta_kubernetes_namespace]
           action: replace
           target_label: kubernetes_namespace
         - source_labels: [__meta_kubernetes_pod_name]
           action: replace
           target_label: kubernetes_pod_name
-        # Set job label to be the app name if available (e.g. 'backend'), otherwise keep default
+        # Set job label from app label, or deployment name
         - source_labels: [__meta_kubernetes_pod_label_app]
-          regex: (.+)
           target_label: job
-          replacement: $1
-        # Set job label to be the app name if available (e.g. 'backend'), otherwise keep default
-        - source_labels: [__meta_kubernetes_pod_label_app]
           regex: (.+)
-          target_label: job
           replacement: $1
+          
+      - job_name: 'kube-state-metrics'
+        static_configs:
+          - targets: ['kube-state-metrics.kube-system.svc.cluster.local:8080']
+
+      - job_name: 'node-exporter'
+        kubernetes_sd_configs:
+          - role: endpoints
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_endpoints_name]
+          regex: 'node-exporter'
+          action: keep

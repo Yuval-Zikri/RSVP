@@ -32,7 +32,7 @@ data:
         },
         {
           "datasource": { "uid": "prometheus" },
-          "gridPos": { "h": 6, "w": 8, "x": 0, "y": 1 },
+          "gridPos": { "h": 5, "w": 8, "x": 0, "y": 1 },
           "id": 1,
           "options": {
             "colorMode": "value",
@@ -45,7 +45,7 @@ data:
           "targets": [
             {
               "datasource": { "uid": "prometheus" },
-              "expr": "sum(rate(http_requests_total{job=\"backend\"}[1m])) or vector(0)",
+              "expr": "sum(rate(http_requests_total{job=\"backend\"}[2m])) or vector(0)",
               "legendFormat": "Total RPS",
               "refId": "A"
             }
@@ -55,7 +55,7 @@ data:
         },
         {
           "datasource": { "uid": "prometheus" },
-          "gridPos": { "h": 6, "w": 8, "x": 8, "y": 1 },
+          "gridPos": { "h": 5, "w": 8, "x": 8, "y": 1 },
           "id": 2,
           "options": {
             "colorMode": "value",
@@ -79,7 +79,7 @@ data:
         },
         {
           "datasource": { "uid": "prometheus" },
-          "gridPos": { "h": 6, "w": 8, "x": 16, "y": 1 },
+          "gridPos": { "h": 5, "w": 8, "x": 16, "y": 1 },
           "id": 3,
           "options": {
             "colorMode": "value",
@@ -93,7 +93,7 @@ data:
           "targets": [
             {
               "datasource": { "uid": "prometheus" },
-              "expr": "(sum(rate(http_requests_total{job=\"backend\",http_status=~\"5..\"}[1m])) or vector(0)) / (sum(rate(http_requests_total{job=\"backend\"}[1m])) or vector(1))",
+              "expr": "(sum(rate(http_requests_total{job=\"backend\",http_status=~\"5..\"}[2m])) or vector(0)) / (sum(rate(http_requests_total{job=\"backend\"}[2m])) or vector(1))",
               "legendFormat": "Error Rate",
               "refId": "A"
             }
@@ -102,47 +102,80 @@ data:
           "type": "stat"
         },
         {
-          "datasource": { "uid": "prometheus" },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 7 },
-          "id": 4,
-          "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true } },
-          "targets": [
-            {
-              "datasource": { "uid": "prometheus" },
-              "expr": "sum by(http_status) (rate(http_requests_total{job=\"backend\"}[1m])) or vector(0)",
-              "legendFormat": "{{http_status}}",
-              "refId": "A"
-            }
-          ],
-          "title": "Traffic by Status Code",
-          "type": "timeseries"
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 6 },
+          "id": 30,
+          "title": "Business Performance Indicators",
+          "type": "row"
         },
         {
           "datasource": { "uid": "prometheus" },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 7 },
-          "id": 5,
-          "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true } },
+          "gridPos": { "h": 5, "w": 8, "x": 0, "y": 7 },
+          "id": 31,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false }
+          },
           "targets": [
             {
-              "datasource": { "uid": "prometheus" },
-              "expr": "sum by(endpoint) (rate(http_requests_total{job=\"backend\"}[1m])) or vector(0)",
-              "legendFormat": "{{endpoint}}",
+              "expr": "sum(increase(events_created_total[1h])) or vector(0)",
+              "legendFormat": "Events Created",
               "refId": "A"
             }
           ],
-          "title": "Traffic by Endpoint",
-          "type": "timeseries"
+          "title": "New Events (Last Hour)",
+          "type": "stat"
         },
         {
-          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 15 },
+          "datasource": { "uid": "prometheus" },
+          "gridPos": { "h": 5, "w": 8, "x": 8, "y": 7 },
+          "id": 32,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false }
+          },
+          "targets": [
+            {
+              "expr": "sum(increase(invitations_sent_total[1h])) or vector(0)",
+              "legendFormat": "Invites Sent",
+              "refId": "A"
+            }
+          ],
+          "title": "Invitations Sent (Last Hour)",
+          "type": "stat"
+        },
+        {
+          "datasource": { "uid": "prometheus" },
+          "gridPos": { "h": 5, "w": 8, "x": 16, "y": 7 },
+          "id": 33,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false }
+          },
+          "targets": [
+            {
+              "expr": "sum(increase(rsvps_submitted_total[1h])) or vector(0)",
+              "legendFormat": "RSVPs",
+              "refId": "A"
+            }
+          ],
+          "title": "RSVPs Received (Last Hour)",
+          "type": "stat"
+        },
+        {
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 12 },
           "id": 22,
           "title": "Infrastructure Stats",
           "type": "row"
         },
         {
           "datasource": { "uid": "prometheus" },
-          "gridPos": { "h": 6, "w": 12, "x": 0, "y": 16 },
+          "gridPos": { "h": 7, "w": 12, "x": 0, "y": 13 },
           "id": 9,
+          "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
           "targets": [
             {
               "datasource": { "uid": "prometheus" },
@@ -156,8 +189,9 @@ data:
         },
         {
           "datasource": { "uid": "prometheus" },
-          "gridPos": { "h": 6, "w": 12, "x": 12, "y": 16 },
+          "gridPos": { "h": 7, "w": 12, "x": 12, "y": 13 },
           "id": 10,
+          "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
           "targets": [
             {
               "datasource": { "uid": "prometheus" },
@@ -171,28 +205,59 @@ data:
         },
         {
           "datasource": { "uid": "prometheus" },
-          "gridPos": { "h": 6, "w": 12, "x": 0, "y": 22 },
+          "gridPos": { "h": 5, "w": 6, "x": 0, "y": 20 },
           "id": 11,
+          "options": { "colorMode": "value", "reduceOptions": { "calcs": ["lastNotNull"] } },
           "targets": [
             {
               "datasource": { "uid": "prometheus" },
-              "expr": "sum(up{job=\"backend\"}) or vector(0)",
-              "legendFormat": "Replicas",
+              "expr": "sum(up{job=\"backend\"})",
+              "legendFormat": "Backend Replicas",
               "refId": "A"
             }
           ],
-          "title": "Backend Replicas Running",
+          "title": "Healthy Backend Pods",
           "type": "stat"
+        },
+        {
+          "datasource": { "uid": "prometheus" },
+          "gridPos": { "h": 5, "w": 6, "x": 6, "y": 20 },
+          "id": 40,
+          "options": { "colorMode": "value", "reduceOptions": { "calcs": ["sum"] } },
+          "targets": [
+            {
+              "expr": "sum(kube_pod_container_status_restarts_total{namespace=\"rsvp-app\"}) or vector(0)",
+              "legendFormat": "Restarts",
+              "refId": "A"
+            }
+          ],
+          "title": "Total Pod Restarts (App)",
+          "type": "stat"
+        },
+        {
+          "datasource": { "uid": "prometheus" },
+          "gridPos": { "h": 5, "w": 12, "x": 12, "y": 20 },
+          "id": 50,
+          "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+          "targets": [
+            {
+              "expr": "sum by(http_status) (rate(http_requests_total{job=\"backend\"}[5m]))",
+              "legendFormat": "Status {{http_status}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Traffic Breakdown",
+          "type": "timeseries"
         }
       ],
-      "refresh": "5s",
+      "refresh": "10s",
       "schemaVersion": 38,
       "style": "dark",
-      "tags": ["rsvp"],
+      "tags": ["rsvp", "kubernetes", "professional"],
       "templating": { "list": [] },
-      "time": { "from": "now-15m", "to": "now" },
-      "title": "RSVP System Monitor",
+      "time": { "from": "now-30m", "to": "now" },
+      "title": "RSVP System Monitor v2",
       "uid": "rsvp-system-monitor",
-      "version": 2,
+      "version": 3,
       "weekStart": ""
     }
