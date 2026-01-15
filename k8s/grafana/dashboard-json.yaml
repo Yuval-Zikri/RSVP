@@ -308,7 +308,7 @@ data:
           },
           "targets": [
             {
-              "expr": "round(sum(increase(http_requests_total{job=\"backend\", endpoint=~\"locations.search_location_route|/api/search-location\", http_status=\"200\"}[1h]))) or vector(0)",
+              "expr": "round(sum(increase(location_searches_total[1h]))) or vector(0)",
               "legendFormat": "Searches",
               "refId": "A"
             }
