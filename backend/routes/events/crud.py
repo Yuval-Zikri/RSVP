@@ -13,6 +13,7 @@ crud_bp = Blueprint('events_crud', __name__)
 def create_event():
     """Create a new event"""
     data = request.json
+    from flask import current_app
     try:
         print(f"DEBUG: Creating event with email_bg: {data.get('email_background_url')}")
         new_event = Event(
@@ -29,8 +30,15 @@ def create_event():
         )
         db.session.add(new_event)
         db.session.commit()
+        
+        # Increment metric
+        if hasattr(current_app, 'metrics'):
+            current_app.metrics['events_created'].inc()
+            
         return jsonify(new_event.to_dict()), 201
     except Exception as e:
+        if hasattr(current_app, 'metrics'):
+            current_app.metrics['database_errors'].inc()
         return jsonify({"error": str(e)}), 400
 
 

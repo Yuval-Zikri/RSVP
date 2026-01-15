@@ -122,3 +122,34 @@ resource "null_resource" "prepare_minikube_host" {
     EOT
   }
 }
+# Automated Port-Forwarding (Development Only)
+resource "null_resource" "port_forwarding" {
+  depends_on = [null_resource.install_root_app]
+
+  triggers = {
+    # Run whenever the root app is re-installed or updated
+    root_app_trigger = null_resource.install_root_app.id
+  }
+
+  provisioner "local-exec" {
+    # Use PowerShell to start port-forwards in the background and detached from the Terraform process
+    # This prevents Terraform from hanging and keeps the forwards running after Terraform finishes.
+    command = <<-EOT
+      echo "Starting automated port-forwards in the background..."
+      
+      # Kill any existing port-forwards on these ports first (to avoid address already in use)
+      powershell -Command "Get-Process -Name 'kubectl' -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -match 'port-forward' } | Stop-Process -Force"
+      
+      # ArgoCD (8888 -> 443)
+      powershell -Command "Start-Process kubectl -ArgumentList 'port-forward svc/argocd-server -n argo 8888:443' -WindowStyle Hidden"
+      
+      # Grafana (3000 -> 80)
+      powershell -Command "Start-Process kubectl -ArgumentList 'port-forward svc/grafana -n rsvp-app 3000:80' -WindowStyle Hidden"
+      
+      # Backend (5000 -> 5000)
+      powershell -Command "Start-Process kubectl -ArgumentList 'port-forward svc/backend -n rsvp-app 5000:5000' -WindowStyle Hidden"
+      
+      echo "Port-forwards started: ArgoCD (8888), Grafana (3000), Backend (5000)"
+    EOT
+  }
+}

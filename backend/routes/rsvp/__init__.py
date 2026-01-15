@@ -35,8 +35,13 @@ def update_rsvp(token):
     if status not in ['attending', 'not_attending']:
         return jsonify({"error": "Invalid status"}), 400
         
+    from flask import current_app
     invite.status = status
     invite.guests_count = guests_count
     db.session.commit()
     
+    # Increment metric
+    if hasattr(current_app, 'metrics'):
+        current_app.metrics['rsvps_submitted'].labels(status=status).inc()
+        
     return jsonify(invite.to_dict()), 200

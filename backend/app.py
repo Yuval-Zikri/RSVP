@@ -21,10 +21,24 @@ def create_app():
     migrate.init_app(app, db)
     REQUEST_COUNT = Counter('http_requests_total', 'Total HTTP requests', ['method', 'endpoint', 'http_status'])
     REQUEST_LATENCY = Histogram('http_request_duration_seconds', 'HTTP request latency seconds', ['method', 'endpoint'])
+    
+    # Business Metrics
+    EVENTS_CREATED = Counter('events_created_total', 'Total number of events created')
+    RSVPS_SUBMITTED = Counter('rsvps_submitted_total', 'Total number of RSVPs submitted', ['status'])
+    INVITATIONS_SENT = Counter('invitations_sent_total', 'Total number of invitations sent')
+    DATABASE_ERRORS = Counter('database_errors_total', 'Total number of database errors')
 
     app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {
         '/metrics': make_wsgi_app()
     })
+
+    # Make metrics accessible via app object for routes to use
+    app.metrics = {
+        'events_created': EVENTS_CREATED,
+        'rsvps_submitted': RSVPS_SUBMITTED,
+        'invitations_sent': INVITATIONS_SENT,
+        'database_errors': DATABASE_ERRORS
+    }
 
     @app.before_request
     def _prom_before_request():

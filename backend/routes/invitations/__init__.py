@@ -46,7 +46,13 @@ def send_invitations():
         }
         send_invitation_email(event, guest_with_token, base_url)
 
+    from flask import current_app
     db.session.commit()
+    
+    # Increment metric
+    if hasattr(current_app, 'metrics'):
+        current_app.metrics['invitations_sent'].inc(len(created_invites))
+        
     return jsonify({
         "message": f"Sent {len(created_invites)} invitations",
         "invitations": [i.to_dict() for i in created_invites]
