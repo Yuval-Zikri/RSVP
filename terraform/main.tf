@@ -12,6 +12,11 @@ variable "kubeconfig" {
   default = "~/.kube/config"
 }
 
+variable "enable_port_forward" {
+  type    = bool
+  default = true
+}
+
 provider "kubernetes" {
   config_path = var.kubeconfig
 }
@@ -124,6 +129,7 @@ resource "null_resource" "prepare_minikube_host" {
 }
 # Automated Port-Forwarding (Development Only)
 resource "null_resource" "port_forwarding" {
+  count      = var.enable_port_forward ? 1 : 0
   depends_on = [null_resource.install_root_app]
 
   triggers = {
@@ -132,24 +138,33 @@ resource "null_resource" "port_forwarding" {
   }
 
   provisioner "local-exec" {
-    # Use PowerShell to start port-forwards in the background and detached from the Terraform process
-    # This prevents Terraform from hanging and keeps the forwards running after Terraform finishes.
     command = <<-EOT
-      echo "Starting automated port-forwards in the background..."
+      echo "Attempting to start automated port-forwards..."
       
-      # Kill any existing port-forwards on these ports first (to avoid address already in use)
-      powershell -Command "Get-Process -Name 'kubectl' -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -match 'port-forward' } | Stop-Process -Force"
+      # Determine if we are on Windows (check for powershell)
+      if command -v powershell >/dev/null 2>&1; then
+          echo "Windows detected (PowerShell found). Starting background processes..."
+          
+          # Kill any existing port-forwards
+          powershell -Command "Get-Process -Name 'kubectl' -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -match 'port-forward' } | Stop-Process -Force"
+          
+          # Start new ones in background (Hidden)
+          powershell -Command "Start-Process kubectl -ArgumentList 'port-forward svc/argocd-server -n argo 8888:443' -WindowStyle Hidden"
+          powershell -Command "Start-Process kubectl -ArgumentList 'port-forward svc/grafana -n rsvp-app 3001:80' -WindowStyle Hidden"
+          powershell -Command "Start-Process kubectl -ArgumentList 'port-forward svc/backend -n rsvp-app 5000:5000' -WindowStyle Hidden"
+      else
+          echo "Linux/Other detected. Starting port-forwards in background using nohup..."
+          
+          # Generic approach for Linux
+          # Kill existing ones if pgrep is available
+          pkill -f "kubectl port-forward" || true
+          
+          nohup kubectl port-forward svc/argocd-server -n argo 8888:443 >/dev/null 2>&1 &
+          nohup kubectl port-forward svc/grafana -n rsvp-app 3001:80 >/dev/null 2>&1 &
+          nohup kubectl port-forward svc/backend -n rsvp-app 5000:5000 >/dev/null 2>&1 &
+      fi
       
-      # ArgoCD (8888 -> 443)
-      powershell -Command "Start-Process kubectl -ArgumentList 'port-forward svc/argocd-server -n argo 8888:443' -WindowStyle Hidden"
-      
-      # Grafana (3000 -> 80)
-      powershell -Command "Start-Process kubectl -ArgumentList 'port-forward svc/grafana -n rsvp-app 3000:80' -WindowStyle Hidden"
-      
-      # Backend (5000 -> 5000)
-      powershell -Command "Start-Process kubectl -ArgumentList 'port-forward svc/backend -n rsvp-app 5000:5000' -WindowStyle Hidden"
-      
-      echo "Port-forwards started: ArgoCD (8888), Grafana (3000), Backend (5000)"
+      echo "Port-forwards initiated: ArgoCD (8888), Grafana (3001), Backend (5000)"
     EOT
   }
 }

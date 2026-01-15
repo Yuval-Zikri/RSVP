@@ -62,7 +62,7 @@ pipeline {
                             
                             // Point Terraform and kubectl explicitly to the FIXED config
                             sh "KUBECONFIG=kubeconfig_fixed terraform init"
-                            sh "KUBECONFIG=kubeconfig_fixed terraform apply -auto-approve -var='kubeconfig=kubeconfig_fixed'"
+                            sh "KUBECONFIG=kubeconfig_fixed terraform apply -auto-approve -var='kubeconfig=kubeconfig_fixed' -var='enable_port_forward=false'"
                         }
                     }
                 }
