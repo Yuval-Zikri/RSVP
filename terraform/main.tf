@@ -139,24 +139,30 @@ resource "null_resource" "port_forwarding" {
 
   provisioner "local-exec" {
     command = <<-EOT
-      echo "Attempting to start automated port-forwards..."
+      echo "Waiting for services to be ready before port-forwarding..."
       
-      # Determine if we are on Windows (check for powershell)
-      if command -v powershell >/dev/null 2>&1; then
-          echo "Windows detected (PowerShell found). Starting background processes..."
+      # Wait for deployments to be available
+      kubectl wait --for=condition=available --timeout=120s deployment/argocd-server -n argo
+      kubectl wait --for=condition=available --timeout=120s deployment/grafana -n rsvp-app
+      kubectl wait --for=condition=available --timeout=120s deployment/backend -n rsvp-app
+      
+      echo "Deployments are available. Starting automated port-forwards..."
+      
+      # Determine if we are on Windows (check for powershell.exe)
+      if command -v powershell.exe >/dev/null 2>&1 || command -v powershell >/dev/null 2>&1; then
+          echo "Windows detected. Starting detached background processes..."
           
           # Kill any existing port-forwards
           powershell -Command "Get-Process -Name 'kubectl' -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -match 'port-forward' } | Stop-Process -Force"
           
-          # Start new ones in background (Hidden)
+          # Use Start-Process with -WindowStyle Hidden to truly decouple from Terraform
           powershell -Command "Start-Process kubectl -ArgumentList 'port-forward svc/argocd-server -n argo 8888:443' -WindowStyle Hidden"
           powershell -Command "Start-Process kubectl -ArgumentList 'port-forward svc/grafana -n rsvp-app 3001:80' -WindowStyle Hidden"
           powershell -Command "Start-Process kubectl -ArgumentList 'port-forward svc/backend -n rsvp-app 5000:5000' -WindowStyle Hidden"
       else
           echo "Linux/Other detected. Starting port-forwards in background using nohup..."
           
-          # Generic approach for Linux
-          # Kill existing ones if pgrep is available
+          # Kill existing ones if pkill is available
           pkill -f "kubectl port-forward" || true
           
           nohup kubectl port-forward svc/argocd-server -n argo 8888:443 >/dev/null 2>&1 &
@@ -164,7 +170,7 @@ resource "null_resource" "port_forwarding" {
           nohup kubectl port-forward svc/backend -n rsvp-app 5000:5000 >/dev/null 2>&1 &
       fi
       
-      echo "Port-forwards initiated: ArgoCD (8888), Grafana (3001), Backend (5000)"
+      echo "Port-forwards successfully initiated in the background."
     EOT
   }
 }
