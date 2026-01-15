@@ -28,6 +28,13 @@ LOCATION_SEARCHES = Counter('location_searches_total', 'Total number of location
 for status in ['attending', 'not_attending']:
     RSVPS_SUBMITTED.labels(status=status).inc(0)
 
+# Initialize other counters to 0 to ensure they appear in Grafana
+EVENTS_CREATED.inc(0)
+INVITATIONS_SENT.inc(0)
+DATABASE_ERRORS.inc(0)
+EMAIL_ERRORS.inc(0)
+LOCATION_SEARCHES.inc(0)
+
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
