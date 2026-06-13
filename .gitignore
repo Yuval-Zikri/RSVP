@@ -35,3 +35,4 @@ kubeconfig_test
 kubeconfig_for_jenkins2
 check_prom_labels.py
 analyze_metrics.py
+diagram_v2.py

@@ -4,6 +4,8 @@
 
 A modern, full-stack application for managing events, invitations, and RSVPs. Built with a focus on user experience, localization (Hebrew/English), and seamless email integration.
 
+![DevOps Architecture](RSVP_App%20-Devops%20Architecture.png)
+
 ---
 
 ## 🚀 Features

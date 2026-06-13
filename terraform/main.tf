@@ -46,7 +46,7 @@ resource "null_resource" "install_argocd" {
   }
 
   provisioner "local-exec" {
-    command = "kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml"
+    command = "kubectl apply --server-side --force-conflicts -n argo -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml"
   }
 }
 
@@ -80,9 +80,9 @@ resource "null_resource" "install_root_app" {
       echo "Waiting for ArgoCD CRDs..."
       count=0
       while [ $count -lt 30 ]; do
-        if kubectl get crd applications.argoproj.io >/dev/null 2>&1; then
-          echo "CRD found, waiting for it to be established..."
-          kubectl wait --for=condition=established --timeout=60s crd/applications.argoproj.io
+        if kubectl get crd applications.argoproj.io applicationsets.argoproj.io >/dev/null 2>&1; then
+          echo "CRDs found, waiting for them to be established..."
+          kubectl wait --for=condition=established --timeout=60s crd/applications.argoproj.io crd/applicationsets.argoproj.io
           break
         fi
         count=$((count + 1))
